@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type");
 
   // Valider le type OTP — liste blanche explicite
-  const VALID_OTP_TYPES = ["email", "magiclink"] as const;
+  const VALID_OTP_TYPES = ["email", "magiclink", "signup", "email_change", "recovery"] as const;
   type ValidOtpType = (typeof VALID_OTP_TYPES)[number];
   const isValidType = (t: string | null): t is ValidOtpType =>
     VALID_OTP_TYPES.includes(t as ValidOtpType);
