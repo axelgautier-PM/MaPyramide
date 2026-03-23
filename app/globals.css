@@ -1,26 +1,119 @@
 @import "tailwindcss";
 
+/* ─── Design tokens ──────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Palette globale */
+  --white:   #FFFFFF;
+  --off:     #F7F6F3;
+  --off2:    #EEECE8;
+  --border:  #E0DDD6;
+  --border2: #C8C5BC;
+  --ink:     #1A1916;
+  --ink2:    #6B6860;
+  --ink3:    #A8A5A0;
+
+  /* Domaine — Santé */
+  --sante-color:  #2E7D0E;
+  --sante-bg:     #EEF7E6;
+  --sante-border: #AAD8A0;
+
+  /* Domaine — Finances */
+  --finances-color:  #B87A10;
+  --finances-bg:     #FFF8EC;
+  --finances-border: #F5D48A;
+
+  /* Domaine — Travail */
+  --travail-color:  #1A5FA8;
+  --travail-bg:     #EEF4FF;
+  --travail-border: #A8C8F5;
+
+  /* Domaine — Entrepreneuriat */
+  --entrepreneuriat-color:  #B84020;
+  --entrepreneuriat-bg:     #FFF2EE;
+  --entrepreneuriat-border: #F5B8A8;
+
+  /* Domaine — Bien-être */
+  --bienetre-color:  #5E4DC4;
+  --bienetre-bg:     #F3F1FF;
+  --bienetre-border: #C4BEF5;
+
+  /* Domaine — Écologie */
+  --ecologie-color:  #0E7A58;
+  --ecologie-bg:     #EAFAF4;
+  --ecologie-border: #8ADAC4;
 }
 
+/* ─── Tailwind theme extension ───────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Couleurs */
+  --color-white:   var(--white);
+  --color-off:     var(--off);
+  --color-off2:    var(--off2);
+  --color-border:  var(--border);
+  --color-border2: var(--border2);
+  --color-ink:     var(--ink);
+  --color-ink2:    var(--ink2);
+  --color-ink3:    var(--ink3);
+
+  /* Santé */
+  --color-sante:        var(--sante-color);
+  --color-sante-bg:     var(--sante-bg);
+  --color-sante-border: var(--sante-border);
+
+  /* Finances */
+  --color-finances:        var(--finances-color);
+  --color-finances-bg:     var(--finances-bg);
+  --color-finances-border: var(--finances-border);
+
+  /* Travail */
+  --color-travail:        var(--travail-color);
+  --color-travail-bg:     var(--travail-bg);
+  --color-travail-border: var(--travail-border);
+
+  /* Entrepreneuriat */
+  --color-entrepreneuriat:        var(--entrepreneuriat-color);
+  --color-entrepreneuriat-bg:     var(--entrepreneuriat-bg);
+  --color-entrepreneuriat-border: var(--entrepreneuriat-border);
+
+  /* Bien-être */
+  --color-bienetre:        var(--bienetre-color);
+  --color-bienetre-bg:     var(--bienetre-bg);
+  --color-bienetre-border: var(--bienetre-border);
+
+  /* Écologie */
+  --color-ecologie:        var(--ecologie-color);
+  --color-ecologie-bg:     var(--ecologie-bg);
+  --color-ecologie-border: var(--ecologie-border);
+
+  /* Polices */
+  --font-syne:    var(--font-syne);
+  --font-dm-sans: var(--font-dm-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ─── Base styles ────────────────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--off);
+  color: var(--ink);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+/* Shell centré max 720px — utilisé dans tous les layouts /app */
+.app-shell {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Bottom sheet animation */
+.bottom-sheet-enter {
+  transform: translateY(100%);
+}
+.bottom-sheet-enter-active {
+  transform: translateY(0);
+  transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Safe area pour bottom nav */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
 }
