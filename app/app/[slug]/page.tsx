@@ -10,6 +10,7 @@ import { MetricDashboard } from "@/components/sante/MetricDashboard";
 import type { Challenge } from "@/types";
 import { useAppStore } from "@/store/app-store";
 import { LEVEL_NAMES } from "@/lib/constants";
+import { useToastStore } from "@/lib/hooks/useToast";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -30,6 +31,7 @@ export default function DomainPage({ params }: PageProps) {
   } = useDomain(slug);
 
   const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null);
+  const { showToast } = useToastStore();
 
   const completedIds = new Set(completions.map((c) => c.challenge_id));
 
@@ -156,6 +158,7 @@ export default function DomainPage({ params }: PageProps) {
           onClose={() => setActiveChallenge(null)}
           onComplete={async (val) => {
             await completeChallenge(activeChallenge, val);
+            showToast("Défi complété ! 🎯");
           }}
         />
       )}
