@@ -23,6 +23,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -31,24 +32,37 @@ export default function AuthPage() {
 
     setLoading(true);
     setError(null);
+    setInfo(null);
 
     if (tab === "login") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        setError("Email ou mot de passe incorrect.");
+        if (error.message.toLowerCase().includes("email not confirmed")) {
+          setError("Ton compte n'est pas encore confirmé. Vérifie ta boite mail.");
+        } else {
+          setError("Email ou mot de passe incorrect.");
+        }
       } else {
         router.push("/app");
       }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
       if (error) {
         setError(
           error.message.includes("already registered")
             ? "Cet email est déjà utilisé. Connecte-toi."
             : "Erreur lors de l'inscription. Réessaie."
         );
-      } else {
+      } else if (data.session) {
         router.push("/app");
+      } else {
+        setInfo("Un email de confirmation t'a été envoyé. Clique sur le lien pour activer ton compte.");
       }
     }
 
@@ -87,7 +101,7 @@ export default function AuthPage() {
             {(["login", "signup"] as Tab[]).map((t) => (
               <button
                 key={t}
-                onClick={() => { setTab(t); setError(null); }}
+                onClick={() => { setTab(t); setError(null); setInfo(null); }}
                 className="flex-1 py-2 rounded-lg text-[14px] transition-all"
                 style={{
                   background: tab === t ? "white" : "transparent",
@@ -148,8 +162,17 @@ export default function AuthPage() {
               </p>
             )}
 
+            {info && (
+              <p
+                className="text-[13px] rounded-xl px-3 py-2"
+                style={{ color: "#1A6B3A", background: "#EAF5EE", border: "1px solid #B6DECA", fontFamily: "var(--font-dm-sans)" }}
+              >
+                ✉️ {info}
+              </p>
+            )}
+
             {error && (
-              <p className="text-[13px]" style={{ color: "#B84020" }}>{error}</p>
+              <p className="text-[13px]" style={{ color: "#B84020", fontFamily: "var(--font-dm-sans)" }}>{error}</p>
             )}
 
             <button
