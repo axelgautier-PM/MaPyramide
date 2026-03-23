@@ -61,6 +61,7 @@ export function useDomain(slug: string): DomainState {
           if (e || !data) throw new Error("Domaine introuvable");
           dom = data;
         }
+        if (!dom) throw new Error("Domaine introuvable");
         setDomain(dom);
 
         const { data: ch, error: chE } = await supabase
