@@ -1,0 +1,7 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'>
+  <rect width='192' height='192' rx='38.400000000000006' fill='#1A1916'/>
+  <polygon points='96,23.04 172.8,157.44 19.200000000000003,157.44' fill='white' opacity='0.15'/>
+  <polygon points='96,23.04 172.8,157.44 19.200000000000003,157.44' fill='none' stroke='white' stroke-width='4.800000000000001' stroke-linejoin='round'/>
+  <polygon points='96,42.24 149.76,157.44 42.24,157.44' fill='white' opacity='0.3'/>
+  <polygon points='96,69.12 122.88,157.44 69.12,157.44' fill='white'/>
+</svg>

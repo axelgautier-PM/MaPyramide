@@ -1,25 +1,48 @@
-import { Header } from "@/components/layout/Header";
-import { BottomNav } from "@/components/layout/BottomNav";
-import { AppInitializer } from "@/components/layout/AppInitializer";
-import { ToastContainer } from "@/components/ui/ToastContainer";
+import type { Metadata, Viewport } from "next";
+import { Syne, DM_Sans } from "next/font/google";
+import "./globals.css";
 
-// Layout partagé par toutes les pages /app
-export default function AppLayout({
+const syne = Syne({
+  variable: "--font-syne",
+  subsets: ["latin"],
+  weight: ["700", "800"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
+export const metadata: Metadata = {
+  title: "MaPyramide — Construis ta meilleure version, un niveau à la fois.",
+  description:
+    "Progresse dans 6 domaines de vie avec un défi de 3 minutes par jour.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MaPyramide",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1A1916",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
+export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <AppInitializer>
-      <div className="min-h-screen flex flex-col bg-off">
-        <ToastContainer />
-        <Header />
-        {/* Contenu centré — shell 720px — padding bas pour la bottom nav */}
-        <main className="flex-1 app-shell px-4 pb-[80px] pt-4">
-          {children}
-        </main>
-        <BottomNav />
-      </div>
-    </AppInitializer>
+    <html lang="fr" className={`${syne.variable} ${dmSans.variable} h-full`}>
+      <body className="min-h-full bg-off font-dm-sans antialiased">
+        {children}
+      </body>
+    </html>
   );
 }
