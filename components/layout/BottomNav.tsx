@@ -111,14 +111,19 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className="flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-colors"
-              style={{ color: isActive ? "#1A1916" : "#A8A5A0" }}
+              style={{ color: isActive ? "#6C63FF" : "#B0B0C8" }}
             >
-              {item.icon(isActive)}
+              <div
+                className="px-4 py-1 rounded-xl transition-all"
+                style={{ background: isActive ? "#EEF0FF" : "transparent" }}
+              >
+                {item.icon(isActive)}
+              </div>
               <span
                 className="text-[10px] leading-none"
                 style={{
                   fontFamily: "var(--font-dm-sans)",
-                  fontWeight: isActive ? 500 : 400,
+                  fontWeight: isActive ? 600 : 400,
                 }}
               >
                 {item.label}

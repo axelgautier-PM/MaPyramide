@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { DomainWithData } from "@/lib/hooks/useDashboard";
+import { colors, shadows, font } from "@/lib/tokens";
 
 interface DomainCardProps {
   data: DomainWithData;
@@ -9,7 +10,7 @@ interface DomainCardProps {
 
 export function DomainCard({ data }: DomainCardProps) {
   const { domain, progress, totalChallenges, completedCount, nextChallenge } = data;
-  const currentLevel = progress?.current_level ?? 0;
+  const currentLevel   = progress?.current_level ?? 0;
   const progressPercent = totalChallenges > 0
     ? Math.round((completedCount / totalChallenges) * 100)
     : 0;
@@ -18,81 +19,72 @@ export function DomainCard({ data }: DomainCardProps) {
   return (
     <Link
       href={`/app/${domain.slug}`}
-      className="block rounded-xl bg-white transition-all active:scale-[0.98]"
+      className="block rounded-2xl bg-white transition-all active:scale-[0.98]"
       style={{
-        border: "1px solid #E0DDD6",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+        border:      `1.5px solid ${colors.border}`,
+        borderLeft:  `4px solid ${domain.color}`,
+        boxShadow:   shadows.sm,
       }}
     >
       <div className="p-4 flex flex-col gap-3">
 
-        {/* Header : icône + nom + badge niveau */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
+        {/* Icône + nom + badge niveau */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
             <span className="text-[22px] leading-none">{domain.icon}</span>
             <span
-              className="text-[15px] text-ink leading-tight"
-              style={{ fontFamily: "var(--font-syne)", fontWeight: 700 }}
+              className="text-[14px] leading-tight"
+              style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}
             >
               {domain.label}
             </span>
           </div>
-          {/* Badge niveau */}
-          <span
-            className="text-[11px] px-2 py-0.5 rounded-full shrink-0"
+          {/* Badge niveau — cercle */}
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white"
             style={{
-              background: domain.bg_color,
-              color: domain.color,
-              fontFamily: "var(--font-syne)",
+              background: isNew ? colors.text3 : domain.color,
+              fontSize:   12,
               fontWeight: 700,
-              border: `1px solid ${domain.border_color}`,
+              fontFamily: font.dm,
             }}
           >
-            {isNew ? "Nouveau" : `Niv. ${currentLevel}`}
-          </span>
+            {isNew ? "·" : currentLevel}
+          </div>
         </div>
 
         {/* Barre de progression */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           <div className="flex justify-between items-center">
-            <span className="text-[11px] text-ink3" style={{ fontFamily: "var(--font-dm-sans)" }}>
+            <span className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>
               {completedCount}/{totalChallenges} défis
             </span>
-            <span className="text-[11px]" style={{ color: domain.color, fontFamily: "var(--font-syne)", fontWeight: 700 }}>
+            <span className="text-[11px]" style={{ color: domain.color, fontFamily: font.dm, fontWeight: 600 }}>
               {progressPercent}%
             </span>
           </div>
-          <div className="h-1.5 rounded-full" style={{ background: "#F0F0F0" }}>
+          <div className="h-[5px] rounded-full" style={{ background: colors.border }}>
             <div
-              className="h-1.5 rounded-full transition-all duration-500"
-              style={{
-                width: `${progressPercent}%`,
-                background: domain.color,
-              }}
+              className="h-[5px] rounded-full transition-all duration-500"
+              style={{ width: `${progressPercent}%`, background: domain.color }}
             />
           </div>
         </div>
 
-        {/* Défi du jour */}
-        <div
-          className="rounded-lg px-3 py-2"
-          style={{ background: domain.bg_color }}
-        >
+        {/* Prochain défi */}
+        <div className="rounded-xl px-3 py-2" style={{ background: domain.bg_color }}>
           {nextChallenge ? (
             <div className="flex items-start gap-2">
-              <span className="text-[12px] shrink-0 mt-0.5" style={{ color: domain.color }}>⚡</span>
+              <span className="text-[11px] shrink-0 mt-0.5" style={{ color: domain.color }}>⚡</span>
               <p
                 className="text-[12px] leading-snug line-clamp-2"
-                style={{ color: domain.color, fontFamily: "var(--font-dm-sans)", fontWeight: 500 }}
+                style={{ color: domain.color, fontFamily: font.dm, fontWeight: 500 }}
               >
                 {nextChallenge.title}
               </p>
             </div>
           ) : (
-            <p
-              className="text-[12px] text-center"
-              style={{ color: domain.color, fontFamily: "var(--font-syne)", fontWeight: 700 }}
-            >
+            <p className="text-[12px] text-center" style={{ color: domain.color, fontFamily: font.dm, fontWeight: 600 }}>
               ✓ Niveau complété !
             </p>
           )}
@@ -103,19 +95,21 @@ export function DomainCard({ data }: DomainCardProps) {
   );
 }
 
-// Squelette de chargement
 export function DomainCardSkeleton() {
   return (
     <div
-      className="rounded-xl bg-white p-4 flex flex-col gap-3 animate-pulse"
-      style={{ border: "1px solid #E0DDD6" }}
+      className="rounded-2xl bg-white p-4 flex flex-col gap-3 animate-pulse"
+      style={{ border: `1.5px solid ${colors.border}`, borderLeft: `4px solid ${colors.border}`, boxShadow: shadows.sm }}
     >
-      <div className="flex items-start justify-between">
-        <div className="h-5 w-32 bg-off2 rounded" />
-        <div className="h-5 w-14 bg-off2 rounded-full" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded" style={{ background: colors.border }} />
+          <div className="h-4 w-24 rounded" style={{ background: colors.border }} />
+        </div>
+        <div className="w-7 h-7 rounded-full" style={{ background: colors.border }} />
       </div>
-      <div className="h-1.5 bg-off2 rounded-full" />
-      <div className="h-10 bg-off2 rounded-lg" />
+      <div className="h-[5px] rounded-full" style={{ background: colors.border }} />
+      <div className="h-9 rounded-xl" style={{ background: colors.border }} />
     </div>
   );
 }

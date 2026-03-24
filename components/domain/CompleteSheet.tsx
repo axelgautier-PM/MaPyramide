@@ -2,29 +2,24 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { Challenge, Domain } from "@/types";
+import { Btn } from "@/components/ui/Btn";
+import { colors, shadows, radii, font } from "@/lib/tokens";
 
 interface CompleteSheetProps {
   challenge: Challenge;
-  domain: Domain;
-  isDone: boolean;
-  onClose: () => void;
-  onComplete: (metricValue?: number) => Promise<void>;
+  domain:    Domain;
+  isDone:    boolean;
+  onClose:   () => void;
+  onComplete:(metricValue?: number) => Promise<void>;
 }
 
-export function CompleteSheet({
-  challenge,
-  domain,
-  isDone,
-  onClose,
-  onComplete,
-}: CompleteSheetProps) {
+export function CompleteSheet({ challenge, domain, isDone, onClose, onComplete }: CompleteSheetProps) {
   const [metricValue, setMetricValue] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [loading,     setLoading]     = useState(false);
+  const [expanded,    setExpanded]    = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Focus l'input si is_measure
   useEffect(() => {
     if (challenge.is_measure && inputRef.current && !isDone) {
       setTimeout(() => inputRef.current?.focus(), 350);
@@ -36,11 +31,9 @@ export function CompleteSheet({
     setLoading(true);
     setSubmitError(null);
     try {
-      const val =
-        challenge.is_measure && metricValue !== ""
-          ? parseFloat(metricValue)
-          : undefined;
-      // Validation basique de la valeur métrique
+      const val = challenge.is_measure && metricValue !== ""
+        ? parseFloat(metricValue)
+        : undefined;
       if (val !== undefined && (isNaN(val) || val < 0 || val > 1_000_000)) {
         setSubmitError("Valeur invalide. Saisis un nombre positif.");
         return;
@@ -60,11 +53,7 @@ export function CompleteSheet({
   return (
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ background: "rgba(0,0,0,0.45)" }}
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40" style={{ background: "rgba(22,22,42,0.5)" }} onClick={onClose} />
 
       {/* Sheet */}
       <div
@@ -73,43 +62,36 @@ export function CompleteSheet({
         aria-label={challenge.title}
         className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl"
         style={{
-          background: "white",
-          maxWidth: 720,
-          margin: "0 auto",
-          maxHeight: "85vh",
-          overflowY: "auto",
-          // 60px BottomNav + safe area pour ne pas être masqué
+          background:    colors.surface,
+          maxWidth:      720,
+          margin:        "0 auto",
+          maxHeight:     "85vh",
+          overflowY:     "auto",
           paddingBottom: "calc(60px + env(safe-area-inset-bottom))",
-          boxShadow: "0 -8px 40px rgba(0,0,0,0.15)",
+          boxShadow:     shadows.lg,
         }}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div
-            className="w-10 h-1 rounded-full"
-            style={{ background: "#E0DDD6" }}
-          />
+          <div className="w-10 h-1 rounded-full" style={{ background: colors.border }} />
         </div>
 
         <div className="px-5 pb-6">
           {/* En-tête : type + durée */}
           <div className="flex items-center gap-2 mb-3">
             <span
-              className="text-[11px] px-2 py-0.5 rounded-full"
+              className="text-[11px] px-2.5 py-0.5 rounded-full"
               style={{
                 background: domain.bg_color,
-                color: domain.color,
-                fontFamily: "var(--font-syne)",
-                fontWeight: 700,
-                border: `1px solid ${domain.border_color}`,
+                color:      domain.color,
+                fontFamily: font.dm,
+                fontWeight: 600,
+                border:     `1px solid ${domain.border_color}`,
               }}
             >
               {challenge.type}
             </span>
-            <span
-              className="text-[11px]"
-              style={{ color: "#A8A5A0", fontFamily: "var(--font-dm-sans)" }}
-            >
+            <span className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>
               ⏱ {challenge.duration}
             </span>
           </div>
@@ -117,53 +99,29 @@ export function CompleteSheet({
           {/* Titre */}
           <h2
             className="text-[18px] leading-snug mb-4"
-            style={{ fontFamily: "var(--font-syne)", fontWeight: 800, color: "#1A1916" }}
+            style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1, letterSpacing: "-0.3px" }}
           >
             {challenge.title}
           </h2>
 
-          {/* Question / instructions */}
-          <div
-            className="rounded-xl p-4 mb-4"
-            style={{ background: domain.bg_color }}
-          >
-            <p
-              className="text-[14px] leading-relaxed"
-              style={{
-                fontFamily: "var(--font-dm-sans)",
-                color: domain.color,
-                fontWeight: 500,
-              }}
-            >
+          {/* Question */}
+          <div className="rounded-xl p-4 mb-4" style={{ background: domain.bg_color }}>
+            <p className="text-[14px] leading-relaxed" style={{ fontFamily: font.dm, color: domain.color, fontWeight: 500 }}>
               {challenge.question}
             </p>
           </div>
 
           {/* Science — expandable */}
           {challenge.science_text && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="w-full text-left mb-4"
-            >
+            <button onClick={() => setExpanded(!expanded)} className="w-full text-left mb-4">
               <div className="flex items-center gap-2 mb-1">
-                <span
-                  className="text-[12px]"
-                  style={{ color: "#A8A5A0", fontFamily: "var(--font-dm-sans)" }}
-                >
+                <span className="text-[12px]" style={{ color: colors.text3, fontFamily: font.dm }}>
                   🔬 La science derrière
                 </span>
-                <span style={{ color: "#A8A5A0", fontSize: 12 }}>
-                  {expanded ? "▲" : "▼"}
-                </span>
+                <span style={{ color: colors.text3, fontSize: 12 }}>{expanded ? "▲" : "▼"}</span>
               </div>
               {expanded && (
-                <p
-                  className="text-[13px] leading-relaxed"
-                  style={{
-                    fontFamily: "var(--font-dm-sans)",
-                    color: "#6B6860",
-                  }}
-                >
+                <p className="text-[13px] leading-relaxed" style={{ fontFamily: font.dm, color: colors.text2 }}>
                   {challenge.science_text}
                 </p>
               )}
@@ -175,19 +133,12 @@ export function CompleteSheet({
             <div className="mb-5">
               <label
                 className="block text-[13px] mb-1.5"
-                style={{
-                  fontFamily: "var(--font-syne)",
-                  fontWeight: 700,
-                  color: "#1A1916",
-                }}
+                style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}
               >
                 {challenge.metric_label}
               </label>
               {challenge.metric_sub && (
-                <p
-                  className="text-[12px] mb-2"
-                  style={{ color: "#A8A5A0", fontFamily: "var(--font-dm-sans)" }}
-                >
+                <p className="text-[12px] mb-2" style={{ color: colors.text3, fontFamily: font.dm }}>
                   {challenge.metric_sub}
                 </p>
               )}
@@ -197,53 +148,47 @@ export function CompleteSheet({
                 inputMode="decimal"
                 value={metricValue}
                 onChange={(e) => setMetricValue(e.target.value)}
-                placeholder="Ta valeur..."
-                className="w-full rounded-xl px-4 py-3 text-[16px] outline-none"
+                placeholder="Ta valeur…"
+                className="w-full outline-none text-[16px]"
                 style={{
-                  border: `2px solid ${metricValue ? domain.color : "#E0DDD6"}`,
-                  fontFamily: "var(--font-dm-sans)",
-                  background: "white",
-                  transition: "border-color 200ms",
+                  padding:      "13px 16px",
+                  borderRadius: radii.lg,
+                  border:       `2px solid ${metricValue ? domain.color : colors.border}`,
+                  fontFamily:   font.dm,
+                  background:   colors.surface,
+                  transition:   "border-color 200ms",
                 }}
               />
             </div>
           )}
 
-          {/* Message d'erreur */}
           {submitError && (
-            <p
-              className="text-[13px] mb-3 text-center"
-              style={{ color: "#B84020", fontFamily: "var(--font-dm-sans)" }}
-            >
+            <p className="text-[13px] mb-3 text-center" style={{ color: colors.danger, fontFamily: font.dm }}>
               {submitError}
             </p>
           )}
 
-          {/* Bouton complétion */}
+          {/* CTA */}
           {!isDone ? (
-            <button
-              onClick={handleComplete}
+            <Btn
+              variant="domain"
+              domainColor={canComplete ? domain.color : colors.border}
+              fullWidth
               disabled={!canComplete || loading}
-              className="w-full py-4 rounded-2xl text-[16px] transition-all"
-              style={{
-                background: canComplete ? domain.color : "#E0DDD6",
-                color: canComplete ? "white" : "#A8A5A0",
-                fontFamily: "var(--font-syne)",
-                fontWeight: 700,
-                cursor: canComplete ? "pointer" : "not-allowed",
-              }}
+              style={{ borderRadius: radii.xl }}
+              onClick={handleComplete}
             >
               {loading ? "Enregistrement…" : "C'est fait ✓"}
-            </button>
+            </Btn>
           ) : (
             <div
               className="w-full py-4 rounded-2xl text-[16px] text-center"
               style={{
                 background: domain.bg_color,
-                color: domain.color,
-                fontFamily: "var(--font-syne)",
+                color:      domain.color,
+                fontFamily: font.dm,
                 fontWeight: 700,
-                border: `1px solid ${domain.border_color}`,
+                border:     `1.5px solid ${domain.border_color}`,
               }}
             >
               ✓ Défi complété !

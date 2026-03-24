@@ -1,64 +1,67 @@
 "use client";
 
 import type { Challenge, Domain } from "@/types";
+import { colors, shadows, radii, font } from "@/lib/tokens";
 
 type ChallengeStatus = "done" | "available" | "locked";
 
 interface ChallengeCardProps {
   challenge: Challenge;
-  status: ChallengeStatus;
-  domain: Domain;
-  onTap: (challenge: Challenge) => void;
+  status:    ChallengeStatus;
+  domain:    Domain;
+  onTap:     (challenge: Challenge) => void;
 }
 
-export function ChallengeCard({
-  challenge,
-  status,
-  domain,
-  onTap,
-}: ChallengeCardProps) {
-  const isDone = status === "done";
+export function ChallengeCard({ challenge, status, domain, onTap }: ChallengeCardProps) {
+  const isDone   = status === "done";
   const isLocked = status === "locked";
+
+  const cardStyle: React.CSSProperties = isDone
+    ? {
+        background:  domain.bg_color,
+        border:      `1.5px solid ${domain.border_color}`,
+        boxShadow:   "none",
+      }
+    : isLocked
+    ? {
+        background:  colors.bg,
+        border:      `1.5px solid ${colors.border}`,
+        opacity:     0.55,
+        boxShadow:   "none",
+      }
+    : {
+        background:  colors.surface,
+        border:      `2px dashed ${domain.color}`,
+        boxShadow:   shadows.sm,
+      };
+
+  const iconBg = isDone
+    ? domain.color
+    : isLocked
+    ? colors.border
+    : `${domain.color}22`;
 
   return (
     <button
       onClick={() => onTap(challenge)}
       disabled={isLocked}
       aria-disabled={isLocked}
-      className="w-full text-left rounded-xl p-4 transition-all active:scale-[0.98]"
-      style={{
-        background: isDone
-          ? domain.bg_color
-          : isLocked
-          ? "#F7F6F3"
-          : "white",
-        border: `1px solid ${
-          isDone ? domain.border_color : isLocked ? "#E0DDD6" : "#E0DDD6"
-        }`,
-        opacity: isLocked ? 0.6 : 1,
-        boxShadow: isDone || isLocked
-          ? "none"
-          : "0 1px 3px rgba(0,0,0,0.06)",
-      }}
+      className="w-full text-left transition-all active:scale-[0.98]"
+      style={{ borderRadius: radii.lg, padding: "14px 16px", ...cardStyle }}
     >
       <div className="flex items-start gap-3">
+
         {/* Icône statut */}
         <div
-          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-          style={{
-            background: isDone
-              ? domain.color
-              : isLocked
-              ? "#E0DDD6"
-              : `${domain.color}18`,
-          }}
+          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+          style={{ background: iconBg }}
         >
           {isDone ? (
-            <span className="text-white text-[13px]">✓</span>
+            <span style={{ color: "#fff", fontSize: 14 }}>✓</span>
           ) : isLocked ? (
-            <span className="text-[12px]" style={{ color: "#A8A5A0" }}>🔒</span>
+            <span style={{ color: colors.text3, fontSize: 13 }}>🔒</span>
           ) : (
-            <span className="text-[13px]" style={{ color: domain.color }}>⚡</span>
+            <span style={{ color: domain.color, fontSize: 14 }}>⚡</span>
           )}
         </div>
 
@@ -67,60 +70,42 @@ export function ChallengeCard({
           <p
             className="text-[14px] leading-snug"
             style={{
-              fontFamily: "var(--font-syne)",
-              fontWeight: 700,
-              color: isDone ? domain.color : isLocked ? "#A8A5A0" : "#1A1916",
+              fontFamily:     font.dm,
+              fontWeight:     600,
+              color:          isDone ? domain.color : isLocked ? colors.text3 : colors.text1,
               textDecoration: isDone ? "line-through" : "none",
             }}
           >
             {challenge.title}
           </p>
 
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1.5">
             <span
-              className="text-[11px] px-1.5 py-0.5 rounded"
+              className="text-[11px] px-2 py-0.5 rounded-full"
               style={{
-                background: isDone ? `${domain.color}15` : "#F0EDE8",
-                color: isDone ? domain.color : "#6B6860",
-                fontFamily: "var(--font-dm-sans)",
+                background: isDone ? `${domain.color}18` : colors.border,
+                color:      isDone ? domain.color : colors.text2,
+                fontFamily: font.dm,
+                fontWeight: 500,
               }}
             >
               {challenge.duration}
             </span>
-            <span
-              className="text-[11px]"
-              style={{
-                color: isDone ? domain.color : "#A8A5A0",
-                fontFamily: "var(--font-dm-sans)",
-              }}
-            >
+            <span className="text-[11px]" style={{ color: isDone ? domain.color : colors.text3, fontFamily: font.dm }}>
               {challenge.type}
             </span>
           </div>
 
-          {/* Étiquette métrique si is_measure et disponible */}
           {challenge.is_measure && !isLocked && (
-            <p
-              className="text-[11px] mt-1.5"
-              style={{
-                color: isDone ? domain.color : "#6B6860",
-                fontFamily: "var(--font-dm-sans)",
-                opacity: 0.85,
-              }}
-            >
+            <p className="text-[11px] mt-1.5" style={{ color: isDone ? domain.color : colors.text2, fontFamily: font.dm }}>
               📊 {challenge.metric_label}
             </p>
           )}
         </div>
 
-        {/* Flèche si disponible */}
+        {/* Flèche disponible */}
         {status === "available" && (
-          <span
-            className="text-[16px] shrink-0 self-center"
-            style={{ color: domain.color }}
-          >
-            →
-          </span>
+          <span className="text-[16px] shrink-0 self-center" style={{ color: domain.color }}>→</span>
         )}
       </div>
     </button>
