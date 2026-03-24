@@ -1,33 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Btn } from "@/components/ui/Btn";
+import { PyramidLogoSvg } from "@/components/ui/PyramidIcon";
 import { colors, shadows, radii, font } from "@/lib/tokens";
-
-function PyramidIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 28 28" fill="none">
-      <polygon points="14,3 26,24 2,24" fill="currentColor" opacity="0.15" />
-      <polygon points="14,3 26,24 2,24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-      <polygon points="14,9 22,24 6,24" fill="currentColor" opacity="0.3" />
-      <polygon points="14,15 18,24 10,24" fill="currentColor" />
-    </svg>
-  );
-}
 
 type Tab = "login" | "signup";
 
 export default function AuthPage() {
-  const [tab, setTab]       = useState<Tab>("login");
-  const [email, setEmail]   = useState("");
+  const [tab, setTab]         = useState<Tab>("login");
+  const [email, setEmail]     = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
   const [info, setInfo]         = useState<string | null>(null);
-  const router = useRouter();
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password.trim()) return;
@@ -44,7 +31,9 @@ export default function AuthPage() {
             : "Email ou mot de passe incorrect."
         );
       } else {
-        router.push("/app");
+        // Rechargement complet pour que le middleware lise les cookies de session
+        window.location.href = "/app";
+        return;
       }
     } else {
       const { data, error } = await supabase.auth.signUp({
@@ -59,7 +48,8 @@ export default function AuthPage() {
             : "Erreur lors de l'inscription. Réessaie."
         );
       } else if (data.session) {
-        router.push("/app");
+        window.location.href = "/app";
+        return;
       } else {
         setInfo("Un email de confirmation t'a été envoyé. Clique sur le lien pour activer ton compte.");
       }
@@ -68,62 +58,69 @@ export default function AuthPage() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "13px 16px",
+    width:        "100%",
+    padding:      "13px 16px",
     borderRadius: radii.lg,
-    fontSize: 15,
-    fontFamily: font.dm,
-    color: colors.text1,
-    background: colors.bg,
-    border: `1.5px solid ${colors.border}`,
-    outline: "none",
-    transition: "border-color 150ms",
+    fontSize:     15,
+    fontFamily:   font.dm,
+    color:        colors.text1,
+    background:   colors.bg,
+    border:       `1.5px solid ${colors.border}`,
+    outline:      "none",
+    transition:   "border-color 150ms",
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
-      style={{ background: colors.bg }}
-    >
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
 
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-10">
-          <div style={{ color: colors.primary }} className="mb-3">
-            <PyramidIcon />
-          </div>
-          <h1
-            className="text-[26px] text-center"
-            style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1, letterSpacing: "-0.5px" }}
-          >
-            MaPyramide
-          </h1>
-          <p className="text-[14px] text-center mt-1" style={{ color: colors.text2, fontFamily: font.dm }}>
-            Construis ta meilleure version, un niveau à la fois.
-          </p>
-        </div>
+      {/* ── Bandeau violet ── */}
+      <div
+        className="flex flex-col items-center justify-center pt-14 pb-10 px-6"
+        style={{ background: colors.primary }}
+      >
+        {/* Pyramide logo */}
+        <PyramidLogoSvg size={52} />
 
-        {/* Carte */}
+        <h1
+          className="mt-4 text-[28px] text-white text-center"
+          style={{ fontFamily: font.dm, fontWeight: 700, letterSpacing: "-0.6px", lineHeight: 1 }}
+        >
+          MaPyramide
+        </h1>
+        <p
+          className="mt-2 text-[11px] text-center tracking-widest uppercase"
+          style={{ color: "rgba(255,255,255,0.55)", fontFamily: font.dm, fontWeight: 500 }}
+        >
+          Développement personnel
+        </p>
+      </div>
+
+      {/* ── Carte formulaire ── */}
+      <div className="flex-1 flex flex-col px-4 -mt-5">
         <div
-          className="rounded-2xl p-6"
-          style={{ background: colors.surface, border: `1.5px solid ${colors.border}`, boxShadow: shadows.sm }}
+          className="rounded-3xl p-6 flex-1"
+          style={{
+            background: colors.surface,
+            boxShadow:  shadows.lg,
+            border:     `1.5px solid ${colors.border}`,
+          }}
         >
           {/* Onglets */}
           <div
-            className="flex rounded-xl p-1 mb-5"
+            className="flex rounded-xl p-1 mb-6"
             style={{ background: colors.bg }}
           >
             {(["login", "signup"] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => { setTab(t); setError(null); setInfo(null); }}
-                className="flex-1 py-2 rounded-xl text-[14px] transition-all"
+                className="flex-1 py-2.5 rounded-xl text-[14px] transition-all"
                 style={{
-                  background:  tab === t ? colors.surface : "transparent",
-                  color:       tab === t ? colors.text1    : colors.text3,
-                  fontFamily:  font.dm,
-                  fontWeight:  tab === t ? 600 : 400,
-                  boxShadow:   tab === t ? shadows.sm : "none",
+                  background: tab === t ? colors.surface : "transparent",
+                  color:      tab === t ? colors.text1    : colors.text3,
+                  fontFamily: font.dm,
+                  fontWeight: tab === t ? 600 : 400,
+                  boxShadow:  tab === t ? shadows.sm : "none",
                 }}
               >
                 {t === "login" ? "Connexion" : "Inscription"}
@@ -141,8 +138,8 @@ export default function AuthPage() {
               autoComplete="email"
               autoFocus
               style={inputStyle}
-              onFocus={(e)  => (e.target.style.borderColor = colors.primary)}
-              onBlur={(e)   => (e.target.style.borderColor = colors.border)}
+              onFocus={(e) => (e.target.style.borderColor = colors.primary)}
+              onBlur={(e)  => (e.target.style.borderColor = colors.border)}
             />
 
             <input
@@ -154,8 +151,8 @@ export default function AuthPage() {
               autoComplete={tab === "login" ? "current-password" : "new-password"}
               minLength={6}
               style={inputStyle}
-              onFocus={(e)  => (e.target.style.borderColor = colors.primary)}
-              onBlur={(e)   => (e.target.style.borderColor = colors.border)}
+              onFocus={(e) => (e.target.style.borderColor = colors.primary)}
+              onBlur={(e)  => (e.target.style.borderColor = colors.border)}
             />
 
             {tab === "signup" && (
@@ -165,17 +162,17 @@ export default function AuthPage() {
             )}
 
             {info && (
-              <p
-                className="text-[13px] rounded-xl px-3 py-2"
+              <div
+                className="rounded-xl px-3 py-2.5 text-[13px]"
                 style={{
-                  color:      colors.success,
                   background: colors.successLight,
                   border:     `1px solid ${colors.success}40`,
+                  color:      colors.success,
                   fontFamily: font.dm,
                 }}
               >
                 ✉️ {info}
-              </p>
+              </div>
             )}
 
             {error && (
@@ -189,7 +186,7 @@ export default function AuthPage() {
               variant="primary"
               fullWidth
               disabled={loading || !email.trim() || !password.trim()}
-              style={{ marginTop: 4, borderRadius: radii.lg }}
+              style={{ marginTop: 8, borderRadius: radii.xl, padding: "16px 24px", fontSize: 16 }}
             >
               {loading
                 ? "Chargement…"
@@ -199,8 +196,8 @@ export default function AuthPage() {
             </Btn>
           </form>
         </div>
-
       </div>
+
     </div>
   );
 }
