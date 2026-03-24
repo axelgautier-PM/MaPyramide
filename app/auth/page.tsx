@@ -9,12 +9,13 @@ import { colors, shadows, radii, font } from "@/lib/tokens";
 type Tab = "login" | "signup";
 
 export default function AuthPage() {
-  const [tab, setTab]         = useState<Tab>("login");
-  const [email, setEmail]     = useState("");
+  const [tab, setTab]           = useState<Tab>("login");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
   const [info, setInfo]         = useState<string | null>(null);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password.trim()) return;
@@ -31,7 +32,6 @@ export default function AuthPage() {
             : "Email ou mot de passe incorrect."
         );
       } else {
-        // Rechargement complet pour que le middleware lise les cookies de session
         window.location.href = "/app";
         return;
       }
@@ -71,45 +71,46 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
+    /* Fond global + centrage vertical/horizontal */
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ background: colors.bg }}
+    >
+      {/* Carte centrée, max-width mobile */}
+      <div className="w-full max-w-sm mx-auto px-4 py-10 flex flex-col gap-0">
 
-      {/* ── Bandeau violet ── */}
-      <div
-        className="flex flex-col items-center justify-center pt-14 pb-10 px-6"
-        style={{ background: colors.primary }}
-      >
-        {/* Pyramide logo */}
-        <PyramidLogoSvg size={52} />
-
-        <h1
-          className="mt-4 text-[28px] text-white text-center"
-          style={{ fontFamily: font.dm, fontWeight: 700, letterSpacing: "-0.6px", lineHeight: 1 }}
-        >
-          MaPyramide
-        </h1>
-        <p
-          className="mt-2 text-[11px] text-center tracking-widest uppercase"
-          style={{ color: "rgba(255,255,255,0.55)", fontFamily: font.dm, fontWeight: 500 }}
-        >
-          Développement personnel
-        </p>
-      </div>
-
-      {/* ── Carte formulaire ── */}
-      <div className="flex-1 flex flex-col px-4 -mt-5">
+        {/* ── Bandeau logo violet ── */}
         <div
-          className="rounded-3xl p-6 flex-1"
+          className="flex flex-col items-center justify-center pt-10 pb-8 px-6 rounded-t-3xl"
+          style={{ background: colors.primary }}
+        >
+          <PyramidLogoSvg size={52} />
+          <h1
+            className="mt-4 text-[28px] text-white text-center"
+            style={{ fontFamily: font.dm, fontWeight: 700, letterSpacing: "-0.6px", lineHeight: 1 }}
+          >
+            MaPyramide
+          </h1>
+          <p
+            className="mt-2 text-[11px] text-center tracking-widest uppercase"
+            style={{ color: "rgba(255,255,255,0.55)", fontFamily: font.dm, fontWeight: 500 }}
+          >
+            Développement personnel
+          </p>
+        </div>
+
+        {/* ── Formulaire ── */}
+        <div
+          className="rounded-b-3xl p-6"
           style={{
             background: colors.surface,
             boxShadow:  shadows.lg,
             border:     `1.5px solid ${colors.border}`,
+            borderTop:  "none",
           }}
         >
           {/* Onglets */}
-          <div
-            className="flex rounded-xl p-1 mb-6"
-            style={{ background: colors.bg }}
-          >
+          <div className="flex rounded-xl p-1 mb-5" style={{ background: colors.bg }}>
             {(["login", "signup"] as Tab[]).map((t) => (
               <button
                 key={t}
@@ -117,7 +118,7 @@ export default function AuthPage() {
                 className="flex-1 py-2.5 rounded-xl text-[14px] transition-all"
                 style={{
                   background: tab === t ? colors.surface : "transparent",
-                  color:      tab === t ? colors.text1    : colors.text3,
+                  color:      tab === t ? colors.text1   : colors.text3,
                   fontFamily: font.dm,
                   fontWeight: tab === t ? 600 : 400,
                   boxShadow:  tab === t ? shadows.sm : "none",
@@ -196,8 +197,8 @@ export default function AuthPage() {
             </Btn>
           </form>
         </div>
-      </div>
 
+      </div>
     </div>
   );
 }
