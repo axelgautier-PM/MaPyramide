@@ -53,7 +53,7 @@ export default function DomainPage({ params }: PageProps) {
     return (
       <div
         className="rounded-xl p-4 text-[14px] text-center"
-        style={{ background: "#FFF2EE", color: "#B84020", border: "1px solid #F5B8A8" }}
+        style={{ background: "#FFF0F0", color: "#FF6B6B", border: "1px solid #FFB0B0", fontFamily: "var(--font-dm-sans)" }}
       >
         {error ?? "Domaine introuvable"}
       </div>
@@ -69,9 +69,9 @@ export default function DomainPage({ params }: PageProps) {
           className="rounded-xl px-4 py-3 text-[14px] text-center"
           style={{
             background: domain.bg_color,
-            color: domain.color,
-            border: `1px solid ${domain.border_color}`,
-            fontFamily: "var(--font-syne)",
+            color:      domain.color,
+            border:     `1.5px solid ${domain.border_color}`,
+            fontFamily: "var(--font-dm-sans)",
             fontWeight: 700,
           }}
         >
@@ -104,9 +104,9 @@ export default function DomainPage({ params }: PageProps) {
               <h2
                 className="text-[14px]"
                 style={{
-                  fontFamily: "var(--font-syne)",
-                  fontWeight: 700,
-                  color: group.isUnlocked ? "#1A1916" : "#A8A5A0",
+                  fontFamily: "var(--font-dm-sans)",
+                  fontWeight: 600,
+                  color: group.isUnlocked ? "#16162A" : "#B0B0C8",
                 }}
               >
                 Niveau {group.level} — {LEVEL_NAMES[group.level] ?? `Niveau ${group.level}`}
@@ -116,7 +116,7 @@ export default function DomainPage({ params }: PageProps) {
               className="text-[12px]"
               style={{
                 fontFamily: "var(--font-dm-sans)",
-                color: group.isUnlocked ? "#6B6860" : "#C8C5BC",
+                color: group.isUnlocked ? "#7B7B99" : "#B0B0C8",
               }}
             >
               {group.completedCount}/{group.totalCount}

@@ -24,12 +24,12 @@ export default function DashboardPage() {
       {/* Salutation */}
       <div>
         <h1
-          className="text-[24px] text-ink"
-          style={{ fontFamily: "var(--font-syne)", fontWeight: 800 }}
+          className="text-[22px]"
+          style={{ fontFamily: "var(--font-dm-sans)", fontWeight: 700, color: "#16162A", letterSpacing: "-0.4px" }}
         >
           {getGreeting()}{firstName ? ` ${firstName}` : ""} 👋
         </h1>
-        <p className="text-[14px] text-ink3 mt-0.5" style={{ fontFamily: "var(--font-dm-sans)" }}>
+        <p className="text-[14px] mt-0.5" style={{ fontFamily: "var(--font-dm-sans)", color: "#7B7B99" }}>
           Quel domaine tu travailles aujourd'hui ?
         </p>
       </div>

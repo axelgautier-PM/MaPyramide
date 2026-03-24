@@ -4,43 +4,52 @@
 :root {
   /* Palette globale */
   --white:   #FFFFFF;
-  --off:     #F7F6F3;
-  --off2:    #EEECE8;
-  --border:  #E0DDD6;
-  --border2: #C8C5BC;
-  --ink:     #1A1916;
-  --ink2:    #6B6860;
-  --ink3:    #A8A5A0;
+  --off:     #F7F7FA;
+  --off2:    #E8E8F2;
+  --border:  #EBEBF2;
+  --border2: #D4D4E8;
+  --ink:     #16162A;
+  --ink2:    #7B7B99;
+  --ink3:    #B0B0C8;
+
+  /* Primaire */
+  --primary:       #6C63FF;
+  --primary-light: #EEF0FF;
+
+  /* Ombres */
+  --shadow-sm: 0 1px 4px rgba(22,22,42,0.06);
+  --shadow-md: 0 4px 16px rgba(22,22,42,0.09);
+  --shadow-lg: 0 8px 32px rgba(22,22,42,0.12);
 
   /* Domaine — Santé */
-  --sante-color:  #2E7D0E;
-  --sante-bg:     #EEF7E6;
-  --sante-border: #AAD8A0;
+  --sante-color:  #3EC98A;
+  --sante-bg:     #EDFAF4;
+  --sante-border: #A8E8CC;
 
   /* Domaine — Finances */
-  --finances-color:  #B87A10;
-  --finances-bg:     #FFF8EC;
-  --finances-border: #F5D48A;
+  --finances-color:  #6C63FF;
+  --finances-bg:     #EEF0FF;
+  --finances-border: #C4BEFF;
 
   /* Domaine — Travail */
-  --travail-color:  #1A5FA8;
-  --travail-bg:     #EEF4FF;
-  --travail-border: #A8C8F5;
+  --travail-color:  #4A90D9;
+  --travail-bg:     #EBF4FD;
+  --travail-border: #A8D4F5;
 
   /* Domaine — Entrepreneuriat */
-  --entrepreneuriat-color:  #B84020;
-  --entrepreneuriat-bg:     #FFF2EE;
-  --entrepreneuriat-border: #F5B8A8;
+  --entrepreneuriat-color:  #FF8C42;
+  --entrepreneuriat-bg:     #FFF3EB;
+  --entrepreneuriat-border: #FFD0AA;
 
   /* Domaine — Bien-être */
-  --bienetre-color:  #5E4DC4;
-  --bienetre-bg:     #F3F1FF;
-  --bienetre-border: #C4BEF5;
+  --bienetre-color:  #8B5CF6;
+  --bienetre-bg:     #F3F0FF;
+  --bienetre-border: #C4B8FF;
 
   /* Domaine — Écologie */
-  --ecologie-color:  #0E7A58;
-  --ecologie-bg:     #EAFAF4;
-  --ecologie-border: #8ADAC4;
+  --ecologie-color:  #27AE60;
+  --ecologie-bg:     #E8F8EE;
+  --ecologie-border: #A8DEC0;
 }
 
 /* ─── Tailwind theme extension ───────────────────────────────────────── */
@@ -84,6 +93,10 @@
   --color-ecologie:        var(--ecologie-color);
   --color-ecologie-bg:     var(--ecologie-bg);
   --color-ecologie-border: var(--ecologie-border);
+
+  /* Primaire */
+  --color-primary:       var(--primary);
+  --color-primary-light: var(--primary-light);
 
   /* Polices */
   --font-syne:    var(--font-syne);
