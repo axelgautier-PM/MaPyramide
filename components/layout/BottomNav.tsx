@@ -44,12 +44,18 @@ function BoltIcon({ active }: { active: boolean }) {
   );
 }
 
-function ChartIcon({ active }: { active: boolean }) {
+function CalendarIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <rect x="3" y="12" width="4" height="7" rx="1" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5} />
-      <rect x="9" y="8" width="4" height="11" rx="1" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5} />
-      <rect x="15" y="4" width="4" height="15" rx="1" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5} />
+      <rect x="3" y="5" width="16" height="15" rx="2"
+        fill={active ? "currentColor" : "none"} opacity={active ? 0.12 : 1}
+        stroke="currentColor" strokeWidth={active ? 2 : 1.5} />
+      <rect x="3" y="5" width="16" height="15" rx="2"
+        fill="none" stroke="currentColor" strokeWidth={active ? 2 : 1.5} />
+      <path d="M7 3v4M15 3v4M3 10h16"
+        stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" />
+      <circle cx="8" cy="15" r="1" fill="currentColor" />
+      <circle cx="14" cy="15" r="1" fill="currentColor" />
     </svg>
   );
 }
@@ -81,10 +87,10 @@ export function BottomNav() {
       matchPaths: ["/app/defi-du-jour"],
     },
     {
-      href: "/app/progression",
-      label: "Progression",
-      icon: (active: boolean) => <ChartIcon active={active} />,
-      matchPaths: ["/app/progression"],
+      href: "/app/calendrier",
+      label: "Calendrier",
+      icon: (active: boolean) => <CalendarIcon active={active} />,
+      matchPaths: ["/app/calendrier"],
     },
     {
       href: "/app/profil",

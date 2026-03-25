@@ -3,7 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import type { Challenge, Domain } from "@/types";
 import { Btn } from "@/components/ui/Btn";
+import { AddEventSheet } from "@/components/calendar/AddEventSheet";
 import { colors, shadows, radii, font } from "@/lib/tokens";
+import { useCalendar } from "@/lib/hooks/useCalendar";
+import { toDateStr } from "@/lib/hooks/useCalendar";
 
 interface CompleteSheetProps {
   challenge: Challenge;
@@ -18,7 +21,9 @@ export function CompleteSheet({ challenge, domain, isDone, onClose, onComplete }
   const [loading,     setLoading]     = useState(false);
   const [expanded,    setExpanded]    = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [planOpen,    setPlanOpen]    = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { addEvent } = useCalendar();
 
   useEffect(() => {
     if (challenge.is_measure && inputRef.current && !isDone) {
@@ -170,32 +175,80 @@ export function CompleteSheet({ challenge, domain, isDone, onClose, onComplete }
 
           {/* CTA */}
           {!isDone ? (
-            <Btn
-              variant="domain"
-              domainColor={canComplete ? domain.color : colors.border}
-              fullWidth
-              disabled={!canComplete || loading}
-              style={{ borderRadius: radii.xl }}
-              onClick={handleComplete}
-            >
-              {loading ? "Enregistrement…" : "C'est fait ✓"}
-            </Btn>
+            <div className="flex flex-col gap-2">
+              <Btn
+                variant="domain"
+                domainColor={canComplete ? domain.color : colors.border}
+                fullWidth
+                disabled={!canComplete || loading}
+                style={{ borderRadius: radii.xl }}
+                onClick={handleComplete}
+              >
+                {loading ? "Enregistrement…" : "C'est fait ✓"}
+              </Btn>
+              {/* Bouton planifier ce défi */}
+              <button
+                onClick={() => setPlanOpen(true)}
+                className="w-full py-3 rounded-2xl text-[14px] flex items-center justify-center gap-2 transition-all"
+                style={{
+                  background: colors.bg,
+                  border: `1.5px solid ${colors.border}`,
+                  color: colors.text2,
+                  fontFamily: font.dm,
+                  fontWeight: 500,
+                }}
+              >
+                📅 Planifier ce défi
+              </button>
+            </div>
           ) : (
-            <div
-              className="w-full py-4 rounded-2xl text-[16px] text-center"
-              style={{
-                background: domain.bg_color,
-                color:      domain.color,
-                fontFamily: font.dm,
-                fontWeight: 700,
-                border:     `1.5px solid ${domain.border_color}`,
-              }}
-            >
-              ✓ Défi complété !
+            <div className="flex flex-col gap-2">
+              <div
+                className="w-full py-4 rounded-2xl text-[16px] text-center"
+                style={{
+                  background: domain.bg_color,
+                  color:      domain.color,
+                  fontFamily: font.dm,
+                  fontWeight: 700,
+                  border:     `1.5px solid ${domain.border_color}`,
+                }}
+              >
+                ✓ Défi complété !
+              </div>
+              <button
+                onClick={() => setPlanOpen(true)}
+                className="w-full py-3 rounded-2xl text-[14px] flex items-center justify-center gap-2"
+                style={{
+                  background: colors.bg,
+                  border: `1.5px solid ${colors.border}`,
+                  color: colors.text2,
+                  fontFamily: font.dm,
+                  fontWeight: 500,
+                }}
+              >
+                📅 Planifier ce défi
+              </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Sheet de planification du défi */}
+      {planOpen && (
+        <AddEventSheet
+          initialForm={{
+            title:        challenge.title,
+            domain_id:    domain.id,
+            domain_color: domain.color,
+            domain_icon:  domain.icon,
+            challenge_id: challenge.id,
+            event_date:   toDateStr(new Date()),
+            duration_minutes: 30,
+          }}
+          onClose={() => setPlanOpen(false)}
+          onSave={async (form) => { await addEvent(form); }}
+        />
+      )}
     </>
   );
 }
