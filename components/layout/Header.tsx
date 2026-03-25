@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAppStore } from "@/store/app-store";
-import { colors, shadows, font } from "@/lib/tokens";
+import { colors, font } from "@/lib/tokens";
+import { PyramidMiniIcon } from "@/components/ui/PyramidIcon";
 
 export function Header() {
   const { profile } = useAppStore();
@@ -18,12 +19,7 @@ export function Header() {
 
         {/* Logo */}
         <Link href="/app" className="flex items-center gap-2.5">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-[18px]"
-            style={{ background: colors.primary, boxShadow: shadows.primary }}
-          >
-            🔺
-          </div>
+          <PyramidMiniIcon size={34} />
           <span
             className="text-[16px]"
             style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1, letterSpacing: "-0.3px" }}

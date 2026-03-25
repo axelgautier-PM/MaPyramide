@@ -21,13 +21,16 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "MaPyramide",
+    startupImage: [
+      { url: "/icons/icon-512.png" },
+    ],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1A1916",
+  themeColor: "#6C63FF",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
