@@ -12,7 +12,7 @@ export function Header() {
 
   return (
     <header
-      className="sticky top-0 z-40"
+      className="sticky top-0 z-40 safe-top"
       style={{ background: colors.surface, borderBottom: `1.5px solid ${colors.border}` }}
     >
       <div className="app-shell px-4 h-14 flex items-center justify-between">

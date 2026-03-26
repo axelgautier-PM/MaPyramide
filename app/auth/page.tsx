@@ -116,7 +116,7 @@ export default function AuthPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center"
+      className="min-h-screen flex items-center justify-center safe-top"
       style={{ background: colors.bg }}
     >
       <div className="w-full max-w-sm mx-auto px-4 py-10 flex flex-col gap-0">

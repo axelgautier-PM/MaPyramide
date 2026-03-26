@@ -153,7 +153,8 @@ export default function OnboardingPage() {
     <div style={pageStyle}>
 
       {/* ── Header avec navigation et progress ── */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4">
+      {/* safe-top pousse le contenu sous la barre de statut iOS (Dynamic Island / notch) */}
+      <div className="safe-top flex items-center gap-3 px-4 pt-4 pb-4">
         {step > 0 ? (
           <button
             onClick={back}
