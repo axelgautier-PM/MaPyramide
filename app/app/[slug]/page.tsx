@@ -6,7 +6,8 @@ import { useDomain } from "@/lib/hooks/useDomain";
 import { DomainHero } from "@/components/domain/DomainHero";
 import { ChallengeCard } from "@/components/domain/ChallengeCard";
 import { CompleteSheet } from "@/components/domain/CompleteSheet";
-import { MetricDashboard } from "@/components/sante/MetricDashboard";
+import { MetricCard } from "@/components/objectifs/MetricCard";
+import { getMetricsForDomain } from "@/lib/metrics-config";
 import type { Challenge } from "@/types";
 import { useAppStore } from "@/store/app-store";
 import { LEVEL_NAMES } from "@/lib/constants";
@@ -87,10 +88,27 @@ export default function DomainPage({ params }: PageProps) {
         completedCount={completedCount}
       />
 
-      {/* Dashboard métriques Santé */}
-      {slug === "sante" && (
-        <MetricDashboard metrics={metrics} />
-      )}
+      {/* Dashboard métriques du domaine */}
+      {(() => {
+        const domainMetrics = getMetricsForDomain(slug);
+        if (domainMetrics.length === 0 || !domain) return null;
+        return (
+          <div className="grid grid-cols-2 gap-2.5">
+            {domainMetrics.map((config, idx) => {
+              const isLast = domainMetrics.length % 2 !== 0 && idx === domainMetrics.length - 1;
+              return (
+                <MetricCard
+                  key={config.key}
+                  config={config}
+                  value={metrics[config.key]}
+                  domainColor={domain.color}
+                  colSpan2={isLast}
+                />
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Niveaux et défis */}
       {levelGroups.map((group) => (

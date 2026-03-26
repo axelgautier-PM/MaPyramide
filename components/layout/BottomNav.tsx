@@ -10,22 +10,14 @@ interface NavItem {
   matchPaths?: string[];
 }
 
-function HomeIcon({ active }: { active: boolean }) {
+function TargetIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <path
-        d="M3 9.5L11 3l8 6.5V19a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"
-        stroke="currentColor"
-        strokeWidth={active ? 2 : 1.5}
-        fill={active ? "currentColor" : "none"}
-        opacity={active ? 0.15 : 1}
-      />
-      <path
-        d="M3 9.5L11 3l8 6.5V19a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"
-        stroke="currentColor"
-        strokeWidth={active ? 2 : 1.5}
-        fill="none"
-      />
+      <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth={active ? 2 : 1.5}
+        fill={active ? "currentColor" : "none"} opacity={active ? 0.12 : 1} />
+      <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth={active ? 2 : 1.5} fill="none" />
+      <circle cx="11" cy="11" r="4" stroke="currentColor" strokeWidth={active ? 2 : 1.5} fill="none" />
+      <circle cx="11" cy="11" r="1.5" fill="currentColor" />
     </svg>
   );
 }
@@ -76,15 +68,15 @@ export function BottomNav() {
   const navItems: NavItem[] = [
     {
       href: "/app",
-      label: "Accueil",
-      icon: (active: boolean) => <HomeIcon active={active} />,
+      label: "Objectifs",
+      icon: (active: boolean) => <TargetIcon active={active} />,
       matchPaths: ["/app"],
     },
     {
-      href: "/app/defi-du-jour",
-      label: "Défi",
+      href: "/app/defis",
+      label: "Défis",
       icon: (active: boolean) => <BoltIcon active={active} />,
-      matchPaths: ["/app/defi-du-jour"],
+      matchPaths: ["/app/defis"],
     },
     {
       href: "/app/calendrier",

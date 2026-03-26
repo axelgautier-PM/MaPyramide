@@ -84,21 +84,19 @@ export function useDomain(slug: string): DomainState {
           .maybeSingle();
         setProgress(prog ?? null);
 
-        if (slug === "sante") {
-          const { data: mData } = await supabase
-            .from("user_metrics")
-            .select("*")
-            .eq("user_id", profile.id)
-            .order("recorded_at", { ascending: false });
+        const { data: mData } = await supabase
+          .from("user_metrics")
+          .select("*")
+          .eq("user_id", profile.id)
+          .order("recorded_at", { ascending: false });
 
-          const latest: Record<string, number> = {};
-          for (const m of mData ?? []) {
-            if (!(m.metric_key in latest)) {
-              latest[m.metric_key] = m.value;
-            }
+        const latest: Record<string, number> = {};
+        for (const m of mData ?? []) {
+          if (!(m.metric_key in latest)) {
+            latest[m.metric_key] = m.value;
           }
-          setMetrics(latest);
         }
+        setMetrics(latest);
       } catch (err) {
         setError("Impossible de charger les données.");
         console.error(err);
