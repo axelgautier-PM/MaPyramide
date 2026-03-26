@@ -33,6 +33,13 @@ function ObjectifsContent() {
     ? domainData
     : domainData.filter((d) => d.domain.slug === activeSlug);
 
+  // Bannière intro — vrai tant qu'au moins un domaine avec métriques configurées
+  // a encore des métriques sans valeur enregistrée
+  const hasMissingMetrics = !loading && domainData.some(({ domain }) => {
+    const configs = getMetricsForDomain(domain.slug);
+    return configs.length > 0 && configs.some((cfg) => metrics[cfg.key] === undefined);
+  });
+
   return (
     <div className="flex flex-col gap-5">
 
@@ -48,6 +55,45 @@ function ObjectifsContent() {
           {firstName ? `Tes indicateurs clés, ${firstName}.` : "Tes indicateurs clés."}
         </p>
       </div>
+
+      {/* ── Bannière intro métriques ── */}
+      {hasMissingMetrics && (
+        <div
+          className="flex gap-3 px-4 py-4 rounded-2xl"
+          style={{
+            background: colors.primaryLight,
+            border: `1.5px solid ${colors.primary}30`,
+          }}
+        >
+          <span className="text-[22px] shrink-0">📊</span>
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-[14px] leading-snug"
+              style={{ fontFamily: font.dm, fontWeight: 700, color: colors.primary }}
+            >
+              Tes premières métriques t'attendent !
+            </p>
+            <p
+              className="text-[13px] mt-1 leading-snug"
+              style={{ fontFamily: font.dm, color: colors.text2 }}
+            >
+              Complète tes premiers défis pour valoriser tes indicateurs clés domaine par domaine.
+            </p>
+            <a
+              href="/app/defis"
+              className="inline-block mt-2 text-[13px]"
+              style={{
+                fontFamily: font.dm,
+                fontWeight: 600,
+                color: colors.primary,
+                textDecoration: "none",
+              }}
+            >
+              Voir les défis →
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Onglets domaines — scrollables */}
       <div className="-mx-4 px-4">

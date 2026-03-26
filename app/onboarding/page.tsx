@@ -113,6 +113,8 @@ export default function OnboardingPage() {
   function finish() {
     if (typeof window !== "undefined") {
       localStorage.setItem("mp_onboarding_done", "true");
+      // Marque la redirection vers /app/defis après connexion
+      localStorage.setItem("mp_redirect_defis", "true");
     }
     router.push("/auth");
   }
@@ -120,6 +122,7 @@ export default function OnboardingPage() {
   function skip() {
     if (typeof window !== "undefined") {
       localStorage.setItem("mp_onboarding_done", "true");
+      // Pas de redirection spécifique : on atterrira sur /app (dashboard)
     }
     router.push("/auth");
   }
@@ -172,7 +175,7 @@ export default function OnboardingPage() {
           className="text-[13px] shrink-0"
           style={{ color: colors.text3, fontFamily: font.dm }}
         >
-          Passer
+          Passer l'onboarding
         </button>
       </div>
 

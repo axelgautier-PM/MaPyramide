@@ -6,56 +6,100 @@ import { Btn } from "@/components/ui/Btn";
 import { PyramidLogoSvg } from "@/components/ui/PyramidIcon";
 import { colors, shadows, radii, font } from "@/lib/tokens";
 
-type Tab = "login" | "signup";
+type View = "login" | "signup" | "confirmation";
 
 export default function AuthPage() {
-  const [tab, setTab]           = useState<Tab>("login");
+  const [view, setView]         = useState<View>("login");
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
-  const [info, setInfo]         = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  function goToLogin(prefillEmail?: string) {
+    setView("login");
+    setError(null);
+    setPassword("");
+    if (prefillEmail !== undefined) setEmail(prefillEmail);
+  }
+
+  function goToSignup() {
+    setView("signup");
+    setError(null);
+    setPassword("");
+  }
+
+  // ─── Soumission connexion ──────────────────────────────────────────────────
+
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password.trim()) return;
     setLoading(true);
     setError(null);
-    setInfo(null);
 
-    if (tab === "login") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError(
-          error.message.toLowerCase().includes("email not confirmed")
-            ? "Ton compte n'est pas encore confirmé. Vérifie ta boite mail."
-            : "Email ou mot de passe incorrect."
-        );
-      } else {
-        window.location.href = "/app";
-        return;
-      }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError(
+        error.message.toLowerCase().includes("email not confirmed")
+          ? "Ton compte n'est pas encore confirmé. Vérifie ta boite mail."
+          : "Email ou mot de passe incorrect."
+      );
+      setLoading(false);
     } else {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-      });
-      if (error) {
-        setError(
-          error.message.includes("already registered")
-            ? "Cet email est déjà utilisé. Connecte-toi."
-            : "Erreur lors de l'inscription. Réessaie."
-        );
-      } else if (data.session) {
-        window.location.href = "/app";
-        return;
+      // Redirection selon flag onboarding
+      const redirectDefis =
+        typeof window !== "undefined" &&
+        localStorage.getItem("mp_redirect_defis") === "true";
+      if (redirectDefis) {
+        localStorage.removeItem("mp_redirect_defis");
+        window.location.href = "/app/defis";
       } else {
-        setInfo("Un email de confirmation t'a été envoyé. Clique sur le lien pour activer ton compte.");
+        window.location.href = "/app";
       }
     }
-    setLoading(false);
   }
+
+  // ─── Soumission inscription ────────────────────────────────────────────────
+
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) return;
+    setLoading(true);
+    setError(null);
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+
+    if (error) {
+      setError(
+        error.message.includes("already registered")
+          ? "Cet email est déjà utilisé. Connecte-toi."
+          : "Erreur lors de l'inscription. Réessaie."
+      );
+      setLoading(false);
+    } else if (data.session) {
+      // Compte déjà confirmé (mode dev sans email) → redirection directe
+      const redirectDefis =
+        typeof window !== "undefined" &&
+        localStorage.getItem("mp_redirect_defis") === "true";
+      if (redirectDefis) {
+        localStorage.removeItem("mp_redirect_defis");
+        window.location.href = "/app/defis";
+      } else {
+        window.location.href = "/app";
+      }
+    } else {
+      // Email de confirmation envoyé
+      setLoading(false);
+      setView("confirmation");
+    }
+  }
+
+  // ─── Style input commun ────────────────────────────────────────────────────
 
   const inputStyle: React.CSSProperties = {
     width:        "100%",
@@ -71,12 +115,10 @@ export default function AuthPage() {
   };
 
   return (
-    /* Fond global + centrage vertical/horizontal */
     <div
       className="min-h-screen flex items-center justify-center"
       style={{ background: colors.bg }}
     >
-      {/* Carte centrée, max-width mobile */}
       <div className="w-full max-w-sm mx-auto px-4 py-10 flex flex-col gap-0">
 
         {/* ── Bandeau logo violet ── */}
@@ -109,95 +151,199 @@ export default function AuthPage() {
             borderTop:  "none",
           }}
         >
-          {/* Onglets */}
-          <div className="flex rounded-xl p-1 mb-5" style={{ background: colors.bg }}>
-            {(["login", "signup"] as Tab[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => { setTab(t); setError(null); setInfo(null); }}
-                className="flex-1 py-2.5 rounded-xl text-[14px] transition-all"
-                style={{
-                  background: tab === t ? colors.surface : "transparent",
-                  color:      tab === t ? colors.text1   : colors.text3,
-                  fontFamily: font.dm,
-                  fontWeight: tab === t ? 600 : 400,
-                  boxShadow:  tab === t ? shadows.sm : "none",
-                }}
+
+          {/* ════════ VUE CONNEXION ════════ */}
+          {view === "login" && (
+            <>
+              <p
+                className="text-[18px] mb-5"
+                style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1 }}
               >
-                {t === "login" ? "Connexion" : "Inscription"}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <input
-              type="email"
-              placeholder="ton@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              autoFocus
-              style={inputStyle}
-              onFocus={(e) => (e.target.style.borderColor = colors.primary)}
-              onBlur={(e)  => (e.target.style.borderColor = colors.border)}
-            />
-
-            <input
-              type="password"
-              placeholder="Mot de passe"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete={tab === "login" ? "current-password" : "new-password"}
-              minLength={6}
-              style={inputStyle}
-              onFocus={(e) => (e.target.style.borderColor = colors.primary)}
-              onBlur={(e)  => (e.target.style.borderColor = colors.border)}
-            />
-
-            {tab === "signup" && (
-              <p className="text-[12px]" style={{ color: colors.text3, fontFamily: font.dm }}>
-                Minimum 6 caractères.
+                Connexion
               </p>
-            )}
 
-            {info && (
-              <div
-                className="rounded-xl px-3 py-2.5 text-[13px]"
-                style={{
-                  background: colors.successLight,
-                  border:     `1px solid ${colors.success}40`,
-                  color:      colors.success,
-                  fontFamily: font.dm,
-                }}
-              >
-                ✉️ {info}
+              <form onSubmit={handleLogin} className="flex flex-col gap-3">
+                <input
+                  type="email"
+                  placeholder="ton@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  autoFocus
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = colors.primary)}
+                  onBlur={(e)  => (e.target.style.borderColor = colors.border)}
+                />
+                <input
+                  type="password"
+                  placeholder="Mot de passe"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  minLength={6}
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = colors.primary)}
+                  onBlur={(e)  => (e.target.style.borderColor = colors.border)}
+                />
+
+                {error && (
+                  <p className="text-[13px]" style={{ color: colors.danger, fontFamily: font.dm }}>
+                    {error}
+                  </p>
+                )}
+
+                <Btn
+                  type="submit"
+                  variant="primary"
+                  fullWidth
+                  disabled={loading || !email.trim() || !password.trim()}
+                  style={{ marginTop: 8, borderRadius: radii.xl, padding: "16px 24px", fontSize: 16 }}
+                >
+                  {loading ? "Connexion…" : "Se connecter →"}
+                </Btn>
+              </form>
+
+              {/* Séparateur */}
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px" style={{ background: colors.border }} />
+                <span className="text-[12px]" style={{ color: colors.text3, fontFamily: font.dm }}>ou</span>
+                <div className="flex-1 h-px" style={{ background: colors.border }} />
               </div>
-            )}
 
-            {error && (
-              <p className="text-[13px]" style={{ color: colors.danger, fontFamily: font.dm }}>
-                {error}
+              {/* Bouton secondaire Créer un compte */}
+              <button
+                onClick={goToSignup}
+                className="w-full py-3.5 rounded-2xl text-[15px] transition-all active:scale-[0.98]"
+                style={{
+                  background: colors.bg,
+                  border:     `1.5px solid ${colors.border}`,
+                  color:      colors.text1,
+                  fontFamily: font.dm,
+                  fontWeight: 500,
+                }}
+              >
+                Créer un compte
+              </button>
+            </>
+          )}
+
+          {/* ════════ VUE INSCRIPTION ════════ */}
+          {view === "signup" && (
+            <>
+              <button
+                onClick={() => goToLogin(email)}
+                className="flex items-center gap-1.5 mb-5 transition-all"
+                style={{ color: colors.text3, fontFamily: font.dm, fontSize: 14 }}
+              >
+                <span>←</span>
+                <span>Retour à la connexion</span>
+              </button>
+
+              <p
+                className="text-[18px] mb-5"
+                style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1 }}
+              >
+                Créer un compte
               </p>
-            )}
 
-            <Btn
-              type="submit"
-              variant="primary"
-              fullWidth
-              disabled={loading || !email.trim() || !password.trim()}
-              style={{ marginTop: 8, borderRadius: radii.xl, padding: "16px 24px", fontSize: 16 }}
-            >
-              {loading
-                ? "Chargement…"
-                : tab === "login"
-                ? "Se connecter →"
-                : "Créer mon compte →"}
-            </Btn>
-          </form>
+              <form onSubmit={handleSignup} className="flex flex-col gap-3">
+                <input
+                  type="email"
+                  placeholder="ton@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  autoFocus
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = colors.primary)}
+                  onBlur={(e)  => (e.target.style.borderColor = colors.border)}
+                />
+                <input
+                  type="password"
+                  placeholder="Mot de passe (6 caractères min.)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  minLength={6}
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = colors.primary)}
+                  onBlur={(e)  => (e.target.style.borderColor = colors.border)}
+                />
+
+                {error && (
+                  <p className="text-[13px]" style={{ color: colors.danger, fontFamily: font.dm }}>
+                    {error}
+                  </p>
+                )}
+
+                <Btn
+                  type="submit"
+                  variant="primary"
+                  fullWidth
+                  disabled={loading || !email.trim() || !password.trim()}
+                  style={{ marginTop: 8, borderRadius: radii.xl, padding: "16px 24px", fontSize: 16 }}
+                >
+                  {loading ? "Création…" : "Créer mon compte →"}
+                </Btn>
+              </form>
+            </>
+          )}
+
+          {/* ════════ VUE CONFIRMATION EMAIL ════════ */}
+          {view === "confirmation" && (
+            <div className="flex flex-col items-center gap-5 py-2">
+              {/* Icône */}
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-[32px]"
+                style={{ background: colors.successLight }}
+              >
+                ✉️
+              </div>
+
+              <div className="text-center">
+                <p
+                  className="text-[18px]"
+                  style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1 }}
+                >
+                  Vérifie ta boite mail !
+                </p>
+                <p
+                  className="mt-2 text-[14px] leading-relaxed"
+                  style={{ fontFamily: font.dm, color: colors.text2 }}
+                >
+                  Un email de confirmation a été envoyé à{" "}
+                  <span style={{ fontWeight: 600, color: colors.text1 }}>{email}</span>.
+                  Clique sur le lien pour activer ton compte.
+                </p>
+                <p
+                  className="mt-2 text-[12px]"
+                  style={{ fontFamily: font.dm, color: colors.text3 }}
+                >
+                  Pense à vérifier tes spams si tu ne le vois pas.
+                </p>
+              </div>
+
+              <button
+                onClick={() => goToLogin(email)}
+                className="w-full py-3.5 rounded-2xl text-[15px] transition-all active:scale-[0.98]"
+                style={{
+                  background: colors.bg,
+                  border:     `1.5px solid ${colors.border}`,
+                  color:      colors.text1,
+                  fontFamily: font.dm,
+                  fontWeight: 500,
+                }}
+              >
+                ← Retour à la connexion
+              </button>
+            </div>
+          )}
+
         </div>
-
       </div>
     </div>
   );
