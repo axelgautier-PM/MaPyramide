@@ -21,7 +21,8 @@ export function ToastContainer() {
 
   return (
     <div
-      className="fixed top-4 left-0 right-0 z-50 flex flex-col items-center gap-2 px-4 pointer-events-none"
+      className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center gap-2 px-4 pointer-events-none safe-top"
+      style={{ paddingTop: `calc(env(safe-area-inset-top) + 8px)` }}
       aria-live="polite"
     >
       {toasts.map((toast) => {
