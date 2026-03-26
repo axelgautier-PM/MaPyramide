@@ -72,6 +72,16 @@ export interface UserDomainProgress {
   unlocked_at: string | null;
 }
 
+/** Note de debug/feedback laissée par l'admin sur un défi (outil CLAUDE_DEBUG) */
+export interface ChallengeNote {
+  id: string;
+  challenge_id: string;
+  user_id: string;
+  note: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Profile {
   id: string;
   email: string | null;

@@ -7,6 +7,8 @@ import { AddEventSheet } from "@/components/calendar/AddEventSheet";
 import { colors, shadows, radii, font } from "@/lib/tokens";
 import { useCalendar } from "@/lib/hooks/useCalendar";
 import { toDateStr } from "@/lib/hooks/useCalendar";
+import { supabase } from "@/lib/supabase";
+import { useAppStore } from "@/store/app-store";
 
 interface CompleteSheetProps {
   challenge: Challenge;
@@ -17,13 +19,52 @@ interface CompleteSheetProps {
 }
 
 export function CompleteSheet({ challenge, domain, isDone, onClose, onComplete }: CompleteSheetProps) {
-  const [metricValue, setMetricValue] = useState("");
-  const [loading,     setLoading]     = useState(false);
-  const [expanded,    setExpanded]    = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [planOpen,    setPlanOpen]    = useState(false);
+  const [metricValue,  setMetricValue]  = useState("");
+  const [loading,      setLoading]      = useState(false);
+  const [expanded,     setExpanded]     = useState(false);
+  const [submitError,  setSubmitError]  = useState<string | null>(null);
+  const [planOpen,     setPlanOpen]     = useState(false);
+  // CLAUDE_DEBUG
+  const [debugMode,    setDebugMode]    = useState(false);
+  const [debugNote,    setDebugNote]    = useState("");
+  const [debugSaving,  setDebugSaving]  = useState(false);
+  const [debugSaved,   setDebugSaved]   = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { addEvent } = useCalendar();
+  const { profile } = useAppStore();
+
+  // Détection mode debug via localStorage (activer avec mp_debug_mode=true)
+  useEffect(() => {
+    setDebugMode(localStorage.getItem("mp_debug_mode") === "true");
+  }, []);
+
+  // Charge la note existante pour ce défi si on est en mode debug
+  useEffect(() => {
+    if (!debugMode || !profile) return;
+    supabase
+      .from("challenge_notes")
+      .select("note")
+      .eq("challenge_id", challenge.id)
+      .eq("user_id", profile.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.note) setDebugNote(data.note);
+      });
+  }, [debugMode, challenge.id, profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function saveDebugNote() {
+    if (!profile || !debugNote.trim()) return;
+    setDebugSaving(true);
+    await supabase.from("challenge_notes").upsert({
+      challenge_id: challenge.id,
+      user_id:      profile.id,
+      note:         debugNote.trim(),
+      updated_at:   new Date().toISOString(),
+    }, { onConflict: "challenge_id,user_id" });
+    setDebugSaving(false);
+    setDebugSaved(true);
+    setTimeout(() => setDebugSaved(false), 2000);
+  }
 
   useEffect(() => {
     if (challenge.is_measure && inputRef.current && !isDone) {
@@ -233,6 +274,53 @@ export function CompleteSheet({ challenge, domain, isDone, onClose, onComplete }
                 {challenge.scheduling_type === "recurring"
                   ? "🔄 Planifier en routine régulière"
                   : "📅 Replanifier ce défi"}
+              </button>
+            </div>
+          )}
+          {/* ── CLAUDE_DEBUG : zone de commentaire admin ── */}
+          {debugMode && (
+            <div
+              className="mt-4 rounded-xl p-3 flex flex-col gap-2"
+              style={{
+                background: "#1A1A2E",
+                border: "1.5px solid #6C63FF40",
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono" style={{ color: "#6C63FF" }}>🤖 CLAUDE_DEBUG</span>
+                <span className="text-[10px]" style={{ color: "#7B7B99", fontFamily: "monospace" }}>
+                  challenge_id: {challenge.id.slice(0, 8)}…
+                </span>
+              </div>
+              <textarea
+                value={debugNote}
+                onChange={(e) => { setDebugNote(e.target.value); setDebugSaved(false); }}
+                placeholder="Commentaire sur ce défi (contenu, scheduling_type, améliorations…)"
+                rows={4}
+                className="w-full outline-none resize-none text-[13px]"
+                style={{
+                  background: "#0D0D1A",
+                  color: "#E0E0FF",
+                  border: "1px solid #6C63FF30",
+                  borderRadius: 8,
+                  padding: "10px 12px",
+                  fontFamily: "monospace",
+                  lineHeight: 1.5,
+                }}
+              />
+              <button
+                onClick={saveDebugNote}
+                disabled={debugSaving || !debugNote.trim()}
+                className="w-full py-2.5 rounded-lg text-[13px] font-mono font-bold transition-all"
+                style={{
+                  background: debugSaved ? "#1A4A2E" : "#6C63FF22",
+                  border: `1px solid ${debugSaved ? "#3EC98A" : "#6C63FF"}`,
+                  color: debugSaved ? "#3EC98A" : "#6C63FF",
+                  cursor: debugSaving || !debugNote.trim() ? "not-allowed" : "pointer",
+                  opacity: !debugNote.trim() ? 0.5 : 1,
+                }}
+              >
+                {debugSaved ? "✓ Note sauvegardée" : debugSaving ? "Enregistrement…" : "CLAUDE_DEBUG — Sauvegarder"}
               </button>
             </div>
           )}
