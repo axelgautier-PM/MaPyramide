@@ -41,8 +41,17 @@ export interface EventForm {
   reminder_minutes_before: number;
 }
 
+/** Retourne la date locale au format YYYY-MM-DD (sans décalage UTC) */
+function localDateStr(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export function emptyForm(defaults?: Partial<EventForm>): EventForm {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
   return {
     title: "",
     domain_id: null,
