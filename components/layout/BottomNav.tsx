@@ -52,12 +52,17 @@ function CalendarIcon({ active }: { active: boolean }) {
   );
 }
 
-function UserIcon({ active }: { active: boolean }) {
+// Icône Concentration — sablier / focus
+function ConcentrationIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <circle cx="11" cy="8" r="3.5" stroke="currentColor" strokeWidth={active ? 2 : 1.5} fill={active ? "currentColor" : "none"} opacity={active ? 0.2 : 1} />
-      <circle cx="11" cy="8" r="3.5" stroke="currentColor" strokeWidth={active ? 2 : 1.5} fill="none" />
-      <path d="M3 19c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" />
+      {/* Cercle extérieur */}
+      <circle cx="11" cy="11" r="9" stroke="currentColor" strokeWidth={active ? 2 : 1.5}
+        fill={active ? "currentColor" : "none"} opacity={active ? 0.1 : 1} />
+      <circle cx="11" cy="11" r="9" stroke="currentColor" strokeWidth={active ? 2 : 1.5} fill="none" />
+      {/* Aiguille / progression */}
+      <path d="M11 6v5l3 2" stroke="currentColor" strokeWidth={active ? 2 : 1.5}
+        strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -85,10 +90,10 @@ export function BottomNav() {
       matchPaths: ["/app/calendrier"],
     },
     {
-      href: "/app/profil",
-      label: "Profil",
-      icon: (active: boolean) => <UserIcon active={active} />,
-      matchPaths: ["/app/profil"],
+      href: "/app/concentration",
+      label: "Concentration",
+      icon: (active: boolean) => <ConcentrationIcon active={active} />,
+      matchPaths: ["/app/concentration"],
     },
   ];
 

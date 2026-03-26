@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 import { useAppStore } from "@/store/app-store";
 import { colors, font } from "@/lib/tokens";
 import { PyramidMiniIcon } from "@/components/ui/PyramidIcon";
@@ -29,10 +28,10 @@ export function Header() {
         </Link>
 
         <div className="flex items-center gap-2.5">
-          {/* Streak */}
+          {/* Streak — "🔥 3j de suite" pour la lisibilité */}
           {profile && profile.streak_count > 0 && (
             <div
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px]"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px]"
               style={{
                 background: "#FFF3EB",
                 border:     "1px solid #FFD0AA",
@@ -40,21 +39,21 @@ export function Header() {
                 fontFamily: font.dm,
                 fontWeight: 700,
               }}
+              title={`${profile.streak_count} jour${profile.streak_count > 1 ? "s" : ""} de suite`}
             >
-              🔥 {profile.streak_count}
+              🔥 <span>{profile.streak_count}j</span>
             </div>
           )}
 
-          {/* Avatar */}
-          <button
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[13px] font-bold"
+          {/* Avatar → lien vers le Profil */}
+          <Link
+            href="/app/profil"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[13px] font-bold transition-opacity active:opacity-70"
             style={{ background: colors.text1 }}
-            aria-label="Se déconnecter"
-            onClick={() => { supabase.auth.signOut().catch(console.error); }}
-            title="Se déconnecter"
+            aria-label="Mon profil"
           >
             {initial}
-          </button>
+          </Link>
         </div>
       </div>
     </header>

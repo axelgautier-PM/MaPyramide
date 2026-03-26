@@ -147,8 +147,8 @@ export function AddEventSheet({ initialForm, onClose, onSave }: AddEventSheetPro
             />
           </div>
 
-          {/* Date + Heure */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Date + Heure — en colonne pour éviter la superposition du picker iOS */}
+          <div className="flex flex-col gap-3">
             <div>
               <label style={labelStyle}>Date</label>
               <input
@@ -161,7 +161,7 @@ export function AddEventSheet({ initialForm, onClose, onSave }: AddEventSheetPro
               />
             </div>
             <div>
-              <label style={labelStyle}>Heure</label>
+              <label style={labelStyle}>Heure de début</label>
               <input
                 type="time"
                 value={form.start_time}
@@ -293,6 +293,7 @@ export function AddEventSheet({ initialForm, onClose, onSave }: AddEventSheetPro
                   onChange={(e) => set("reminder_minutes_before", Number(e.target.value))}
                   style={{ ...inputStyle, cursor: "pointer" }}
                 >
+                  <option value={0}>À l&apos;heure de l&apos;événement</option>
                   {[5, 10, 15, 30, 60].map((m) => (
                     <option key={m} value={m}>{m} min avant</option>
                   ))}
