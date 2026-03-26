@@ -198,7 +198,11 @@ export function CompleteSheet({ challenge, domain, isDone, onClose, onComplete }
                   fontWeight: 500,
                 }}
               >
-                📅 Planifier ce défi
+                {challenge.scheduling_type === "recurring"
+                  ? "🔄 Planifier en routine régulière"
+                  : challenge.scheduling_type === "one_time"
+                  ? "📅 Planifier ce rendez-vous"
+                  : "📅 Planifier ce défi"}
               </button>
             </div>
           ) : (
@@ -226,14 +230,16 @@ export function CompleteSheet({ challenge, domain, isDone, onClose, onComplete }
                   fontWeight: 500,
                 }}
               >
-                📅 Planifier ce défi
+                {challenge.scheduling_type === "recurring"
+                  ? "🔄 Planifier en routine régulière"
+                  : "📅 Replanifier ce défi"}
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Sheet de planification du défi */}
+      {/* Sheet de planification du défi — pré-rempli selon scheduling_type */}
       {planOpen && (
         <AddEventSheet
           initialForm={{
@@ -243,7 +249,11 @@ export function CompleteSheet({ challenge, domain, isDone, onClose, onComplete }
             domain_icon:  domain.icon,
             challenge_id: challenge.id,
             event_date:   toDateStr(new Date()),
-            duration_minutes: 30,
+            duration_minutes: challenge.scheduling_type === "one_time" ? 60 : 30,
+            // Séances régulières → pré-cocher "Régulier"
+            is_recurring: challenge.scheduling_type === "recurring",
+            has_reminder: true,
+            reminder_minutes_before: 10,
           }}
           onClose={() => setPlanOpen(false)}
           onSave={async (form) => { await addEvent(form); }}

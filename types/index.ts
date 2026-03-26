@@ -38,6 +38,12 @@ export interface Challenge {
   metric_sub: string | null;
   is_measure: boolean;
   is_active: boolean;
+  /** Type de planification suggérée pour ce défi :
+   * - null       : pas de planification suggérée
+   * - "one_time" : rendez-vous unique (ex: bilan médical, bilan financier)
+   * - "recurring": séances régulières (ex: sport, méditation)
+   */
+  scheduling_type: "one_time" | "recurring" | null;
 }
 
 export interface ChallengeCompletion {

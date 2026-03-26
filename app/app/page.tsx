@@ -1,18 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMetrics } from "@/lib/hooks/useMetrics";
 import { useDashboard } from "@/lib/hooks/useDashboard";
-import { DOMAIN_METRICS, getMetricsForDomain } from "@/lib/metrics-config";
+import { getMetricsForDomain } from "@/lib/metrics-config";
 import { MetricCard } from "@/components/objectifs/MetricCard";
 import { useAppStore } from "@/store/app-store";
 import { colors, font } from "@/lib/tokens";
 
-export default function ObjectifsPage() {
+// Composant interne pour accéder aux searchParams
+function ObjectifsContent() {
+  const searchParams = useSearchParams();
+  const initialDomain = searchParams.get("domain") ?? "all";
+
   const { profile } = useAppStore();
   const { data: domainData, loading: domainsLoading } = useDashboard();
   const { metrics, loading: metricsLoading } = useMetrics();
-  const [activeSlug, setActiveSlug] = useState<string>("all");
+  const [activeSlug, setActiveSlug] = useState<string>(initialDomain);
+
+  // Sync si le paramètre URL change (ex: navigation depuis [slug])
+  useEffect(() => {
+    const d = searchParams.get("domain");
+    if (d) setActiveSlug(d);
+  }, [searchParams]);
 
   const loading = domainsLoading || metricsLoading;
   const firstName = profile?.email?.split("@")[0] ?? "";
@@ -166,5 +177,14 @@ export default function ObjectifsPage() {
       )}
 
     </div>
+  );
+}
+
+// Page principale — enveloppe ObjectifsContent dans Suspense (requis par useSearchParams)
+export default function ObjectifsPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: 200 }} />}>
+      <ObjectifsContent />
+    </Suspense>
   );
 }
