@@ -5,9 +5,8 @@ import { colors, font } from "@/lib/tokens";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const WORK_OPTIONS  = [15, 20, 25, 30, 45, 50];
 const BREAK_OPTIONS = [5, 10, 15, 20];
-const MAX_SESSIONS  = 4;
+const MAX_SESSIONS  = 4; // utilisé en interne pour le cycle, non affiché
 
 const POMODORO_BACKGROUNDS = [
   "/pomodoro/bg-1.jpg",
@@ -26,7 +25,7 @@ function fmtTime(secs: number): string {
   return `${m}:${s}`;
 }
 
-// ─── Arc SVG de progression ───────────────────────────────────────────────────
+// ─── Arc SVG statique (utilisé dans FocusOverlay) ─────────────────────────────
 
 function TimerArc({
   progress,
@@ -64,21 +63,125 @@ function TimerArc({
   );
 }
 
+// ─── Cadran interactif (carte principale — glisser pour régler) ───────────────
+
+function InteractiveDial({
+  duration,
+  progress,
+  isActive,
+  onChange,
+  size = 220,
+}: {
+  duration: number;
+  progress: number;
+  isActive: boolean;
+  onChange: (minutes: number) => void;
+  size?: number;
+}) {
+  const dragging = useRef(false);
+
+  const stroke  = 2.5;
+  const padding = 16; // espace pour le curseur
+  const r       = (size - padding * 2) / 2;
+  const cx      = size / 2;
+  const cy      = size / 2;
+  const circ    = 2 * Math.PI * r;
+
+  const clamped = Math.max(0, Math.min(1, progress));
+  const offset  = circ * (1 - clamped);
+
+  // Position du curseur (12h = sommet, sens horaire)
+  const endAngle = -Math.PI / 2 + 2 * Math.PI * clamped;
+  const cursorX  = cx + r * Math.cos(endAngle);
+  const cursorY  = cy + r * Math.sin(endAngle);
+
+  const trackColor  = "rgba(108,99,255,0.12)";
+  const activeColor = colors.primary;
+
+  function minutesFromPointer(e: React.PointerEvent<SVGSVGElement>): number {
+    const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+    const dx   = e.clientX - rect.left - cx;
+    const dy   = e.clientY - rect.top  - cy;
+    let angle  = Math.atan2(dy, dx) + Math.PI / 2;
+    if (angle < 0) angle += 2 * Math.PI;
+    const raw     = (angle / (2 * Math.PI)) * 60;
+    const snapped = Math.round(raw / 5) * 5;
+    return Math.max(5, Math.min(60, snapped));
+  }
+
+  function handlePointerDown(e: React.PointerEvent<SVGSVGElement>) {
+    if (isActive) return;
+    dragging.current = true;
+    (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+    onChange(minutesFromPointer(e));
+  }
+
+  function handlePointerMove(e: React.PointerEvent<SVGSVGElement>) {
+    if (!dragging.current || isActive) return;
+    onChange(minutesFromPointer(e));
+  }
+
+  function handlePointerUp() {
+    dragging.current = false;
+    // Retour haptique léger (Android)
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(8);
+    }
+  }
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      style={{ touchAction: "none", cursor: isActive ? "default" : "grab", display: "block" }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+    >
+      {/* Arc pivoté pour que 12h = départ */}
+      <g transform={`rotate(-90 ${cx} ${cy})`}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={trackColor} strokeWidth={stroke} />
+        {clamped > 0 && (
+          <circle
+            cx={cx} cy={cy} r={r}
+            fill="none"
+            stroke={activeColor}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={offset}
+            style={{ transition: isActive ? "stroke-dashoffset 0.8s linear" : "none" }}
+          />
+        )}
+      </g>
+
+      {/* Curseur — visible uniquement en mode réglage (idle) */}
+      {!isActive && duration > 0 && (
+        <>
+          {/* Ombre portée */}
+          <circle cx={cursorX} cy={cursorY} r={12} fill="rgba(0,0,0,0.12)" transform={`translate(0,1)`} />
+          {/* Anneau blanc */}
+          <circle cx={cursorX} cy={cursorY} r={11} fill="white" />
+          {/* Point violet */}
+          <circle cx={cursorX} cy={cursorY} r={7}  fill={activeColor} />
+        </>
+      )}
+    </svg>
+  );
+}
+
 // ─── Sheet Paramètres (bottom sheet) ─────────────────────────────────────────
 
 function SettingsSheet({
-  workDuration,
   breakDuration,
   chronoMode,
-  onWorkChange,
   onBreakChange,
   onChronoChange,
   onClose,
 }: {
-  workDuration: number;
   breakDuration: number;
   chronoMode: boolean;
-  onWorkChange: (v: number) => void;
   onBreakChange: (v: number) => void;
   onChronoChange: (v: boolean) => void;
   onClose: () => void;
@@ -96,34 +199,13 @@ function SettingsSheet({
         </div>
 
         <p className="text-[17px]" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1 }}>
-          ⚙️ Paramètres Pomodoro
+          ⚙️ Personnaliser
         </p>
-
-        {/* Durée de travail */}
-        <div className="flex flex-col gap-2">
-          <p className="text-[11px] uppercase tracking-widest" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text3 }}>
-            Session de travail
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            {WORK_OPTIONS.map((opt) => (
-              <button key={opt} onClick={() => onWorkChange(opt)}
-                className="px-3 py-1.5 rounded-full text-[13px] transition-all active:scale-95"
-                style={{
-                  background: workDuration === opt ? colors.primary : colors.bg,
-                  border: `1.5px solid ${workDuration === opt ? colors.primary : colors.border}`,
-                  color: workDuration === opt ? "#fff" : colors.text2,
-                  fontFamily: font.dm, fontWeight: workDuration === opt ? 700 : 400,
-                }}>
-                {opt} min
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Durée de pause */}
         <div className="flex flex-col gap-2">
           <p className="text-[11px] uppercase tracking-widest" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text3 }}>
-            Pause
+            Durée de pause
           </p>
           <div className="flex gap-2 flex-wrap">
             {BREAK_OPTIONS.map((opt) => (
@@ -357,6 +439,9 @@ export default function ConcentrationPage() {
     : remaining / totalSecs;
   const displayTime = chronoMode ? fmtTime(elapsed) : fmtTime(remaining);
 
+  // Progression pour le cadran : quand idle = fraction de la durée choisie / 60 min
+  const dialProgress = phase === "idle" ? workDuration / 60 : progress;
+
   // Sync durée si config change sans session en cours
   useEffect(() => {
     if (!running && phase === "idle") {
@@ -440,7 +525,7 @@ export default function ConcentrationPage() {
   }
 
   const phaseLabel = phase === "idle"  ? "Prêt ?"
-                   : phase === "work"  ? `Session ${sessionNum} / ${MAX_SESSIONS}`
+                   : phase === "work"  ? "Concentration"
                    :                    "Pause 🌿";
 
   return (
@@ -466,10 +551,8 @@ export default function ConcentrationPage() {
       {/* ── Sheet Paramètres ── */}
       {showSettings && (
         <SettingsSheet
-          workDuration={workDuration}
           breakDuration={breakDuration}
           chronoMode={chronoMode}
-          onWorkChange={(v) => { setWorkDuration(v); if (!running && phase === "idle") setRemaining(v * 60); }}
           onBreakChange={setBreakDuration}
           onChronoChange={setChronoMode}
           onClose={() => setShowSettings(false)}
@@ -519,12 +602,21 @@ export default function ConcentrationPage() {
             {phaseLabel}
           </p>
 
-          {/* Arc + timer */}
+          {/* Cadran interactif + timer */}
           <div className="relative flex items-center justify-center" style={{ width: 220, height: 220 }}>
             <div className="absolute inset-0 flex items-center justify-center">
-              <TimerArc progress={progress} size={220} />
+              <InteractiveDial
+                duration={workDuration}
+                progress={dialProgress}
+                isActive={phase !== "idle"}
+                onChange={(v) => {
+                  setWorkDuration(v);
+                  if (!running && phase === "idle") setRemaining(v * 60);
+                }}
+                size={220}
+              />
             </div>
-            <div className="flex flex-col items-center gap-1 z-10">
+            <div className="flex flex-col items-center gap-1 z-10 pointer-events-none">
               <span
                 className="tabular-nums leading-none"
                 style={{ fontFamily: font.dm, fontWeight: 700, fontSize: 48, letterSpacing: "-2px", color: colors.text1 }}
@@ -532,26 +624,13 @@ export default function ConcentrationPage() {
                 {displayTime}
               </span>
               <span className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>
-                {chronoMode ? "écoulé" : phase === "work" ? "restant" : phase === "break" ? "de pause" : ""}
+                {phase === "idle"
+                  ? "glisser pour régler"
+                  : chronoMode ? "écoulé"
+                  : phase === "work" ? "restant"
+                  : "de pause"}
               </span>
             </div>
-          </div>
-
-          {/* Dots sessions */}
-          <div className="flex gap-2">
-            {Array.from({ length: MAX_SESSIONS }).map((_, i) => (
-              <div key={i} className="rounded-full transition-all"
-                style={{
-                  width: i === sessionNum - 1 && phase !== "idle" ? 16 : 8,
-                  height: 8,
-                  background: i < sessionNum - 1
-                    ? colors.primary
-                    : i === sessionNum - 1 && phase !== "idle"
-                    ? colors.primary
-                    : colors.border,
-                }}
-              />
-            ))}
           </div>
 
           {/* Boutons */}
@@ -626,28 +705,44 @@ export default function ConcentrationPage() {
           className="flex items-center justify-between px-5 py-4 rounded-2xl"
           style={{ background: colors.surface, border: `1.5px solid ${colors.border}` }}
         >
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <p className="text-[20px]" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.primary }}>{workDuration}</p>
-              <p className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>min travail</p>
+          <div className="flex items-center gap-5">
+            <div className="flex items-center gap-2">
+              <span className="text-[16px]">🎯</span>
+              <div>
+                <p className="text-[15px]" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.primary, lineHeight: 1 }}>
+                  {workDuration} min
+                </p>
+                <p className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>travail</p>
+              </div>
             </div>
-            <div style={{ width: 1, height: 32, background: colors.border }} />
-            <div className="text-center">
-              <p className="text-[20px]" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.success }}>{breakDuration}</p>
-              <p className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>min pause</p>
+            <div style={{ width: 1, height: 28, background: colors.border }} />
+            <div className="flex items-center gap-2">
+              <span className="text-[16px]">🌿</span>
+              <div>
+                <p className="text-[15px]" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.success, lineHeight: 1 }}>
+                  {breakDuration} min
+                </p>
+                <p className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>pause</p>
+              </div>
             </div>
-            <div style={{ width: 1, height: 32, background: colors.border }} />
-            <div className="text-center">
-              <p className="text-[20px]" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1 }}>{MAX_SESSIONS}</p>
-              <p className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>sessions</p>
-            </div>
+            {chronoMode && (
+              <>
+                <div style={{ width: 1, height: 28, background: colors.border }} />
+                <p className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>⏱ Chrono</p>
+              </>
+            )}
           </div>
           <button
             onClick={() => setShowSettings(true)}
-            className="text-[12px] px-3 py-1.5 rounded-full transition-all active:scale-95"
-            style={{ background: colors.bg, border: `1.5px solid ${colors.border}`, color: colors.text2, fontFamily: font.dm }}
+            className="w-8 h-8 flex items-center justify-center rounded-xl transition-all active:scale-90"
+            style={{ background: colors.bg, border: `1.5px solid ${colors.border}` }}
+            aria-label="Personnaliser"
           >
-            Modifier
+            <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="2.5" stroke={colors.text2} strokeWidth="1.5" />
+              <path d="M9 1.5v2M9 14.5v2M1.5 9h2M14.5 9h2M3.6 3.6l1.4 1.4M13 13l1.4 1.4M3.6 14.4l1.4-1.4M13 5l1.4-1.4"
+                stroke={colors.text2} strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
 
