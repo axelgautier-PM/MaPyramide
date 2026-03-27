@@ -252,30 +252,24 @@ function SettingsSheet({
 
 function FocusOverlay({
   phase,
-  running,
   remaining,
   elapsed,
   bgUrl,
   workDuration,
   breakDuration,
   chronoMode,
-  onStartPause,
   onStop,
   onSkipToBreak,
-  onExit,
 }: {
   phase: Phase;
-  running: boolean;
   remaining: number;
   elapsed: number;
   bgUrl: string;
   workDuration: number;
   breakDuration: number;
   chronoMode: boolean;
-  onStartPause: () => void;
   onStop: () => void;
   onSkipToBreak: () => void;
-  onExit: () => void;
 }) {
   const totalSecs   = phase === "break" ? breakDuration * 60 : workDuration * 60;
   const progress    = chronoMode ? Math.min(elapsed / totalSecs, 1) : remaining / totalSecs;
@@ -303,10 +297,10 @@ function FocusOverlay({
       {/* ── Bouton quitter (discret, haut droite) ── */}
       <div className="flex justify-end px-5 pt-4 pb-2 relative z-10">
         <button
-          onClick={onExit}
+          onClick={onStop}
           className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
           style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}
-          aria-label="Quitter le mode focus"
+          aria-label="Arrêter et quitter"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M2 2l10 10M12 2L2 12" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" />
@@ -352,60 +346,38 @@ function FocusOverlay({
 
       {/* ── Boutons bas ── */}
       <div
-        className="relative z-10 flex flex-col items-center gap-4 pb-12 px-8"
+        className="relative z-10 flex flex-col items-center gap-3"
         style={{ paddingBottom: "max(48px, calc(env(safe-area-inset-bottom) + 32px))" }}
       >
-        {/* Play / Pause — bouton principal */}
+        {/* Arrêter — CTA secondaire outlined */}
         <button
-          onClick={onStartPause}
-          className="flex items-center gap-3 px-10 py-4 rounded-full text-[17px] transition-all active:scale-95"
+          onClick={onStop}
+          className="flex items-center gap-2.5 px-10 py-3.5 rounded-full text-[16px] transition-all active:scale-95"
           style={{
-            background: "rgba(255,255,255,0.95)",
-            color: "#1a1a40",
+            border: "1.5px solid rgba(255,255,255,0.4)",
+            background: "rgba(255,255,255,0.07)",
+            color: "rgba(255,255,255,0.88)",
             fontFamily: font.dm,
-            fontWeight: 700,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+            fontWeight: 600,
+            backdropFilter: "blur(6px)",
           }}
         >
-          {running ? (
-            <>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <rect x="3" y="2" width="4.5" height="14" rx="2" fill="#1a1a40" />
-                <rect x="10.5" y="2" width="4.5" height="14" rx="2" fill="#1a1a40" />
-              </svg>
-              Pause
-            </>
-          ) : (
-            <>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M5 3l11 6-11 6V3z" fill="#1a1a40" />
-              </svg>
-              {phase === "idle" ? "Démarrer" : "Reprendre"}
-            </>
-          )}
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <rect x="1.5" y="1.5" width="10" height="10" rx="2.5" fill="rgba(255,255,255,0.88)" />
+          </svg>
+          Arrêter
         </button>
 
-        {/* Actions secondaires — très discret */}
-        <div className="flex gap-6">
-          {phase !== "idle" && (
-            <button
-              onClick={onStop}
-              className="text-[13px] transition-all active:opacity-50"
-              style={{ color: "rgba(255,255,255,0.35)", fontFamily: font.dm }}
-            >
-              Arrêter
-            </button>
-          )}
-          {phase === "work" && (
-            <button
-              onClick={onSkipToBreak}
-              className="text-[13px] transition-all active:opacity-50"
-              style={{ color: "rgba(255,255,255,0.35)", fontFamily: font.dm }}
-            >
-              → Pause
-            </button>
-          )}
-        </div>
+        {/* Passer à la pause — très discret */}
+        {phase === "work" && (
+          <button
+            onClick={onSkipToBreak}
+            className="text-[12px] transition-all active:opacity-50"
+            style={{ color: "rgba(255,255,255,0.28)", fontFamily: font.dm }}
+          >
+            passer à la pause →
+          </button>
+        )}
       </div>
     </div>
   );
@@ -490,15 +462,13 @@ export default function ConcentrationPage() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  function handleStartPause() {
-    if (phase === "idle") {
-      setPhase("work");
-      setRemaining(workDuration * 60);
-      setElapsed(0);
-      setBgIndex(Math.floor(Math.random() * POMODORO_BACKGROUNDS.length));
-      setFocusMode(true);
-    }
-    setRunning((r) => !r);
+  function handleStart() {
+    setPhase("work");
+    setRemaining(workDuration * 60);
+    setElapsed(0);
+    setBgIndex(Math.floor(Math.random() * POMODORO_BACKGROUNDS.length));
+    setFocusMode(true);
+    setRunning(true);
   }
 
   function handleStop() {
@@ -519,11 +489,6 @@ export default function ConcentrationPage() {
     setElapsed(0);
   }
 
-  function handleExitFocus() {
-    setFocusMode(false);
-    // Le timer continue en arrière-plan
-  }
-
   const phaseLabel = phase === "idle"  ? "Prêt ?"
                    : phase === "work"  ? "Concentration"
                    :                    "Pause 🌿";
@@ -534,17 +499,14 @@ export default function ConcentrationPage() {
       {focusMode && (
         <FocusOverlay
           phase={phase}
-          running={running}
           remaining={remaining}
           elapsed={elapsed}
           bgUrl={POMODORO_BACKGROUNDS[bgIndex]}
           workDuration={workDuration}
           breakDuration={breakDuration}
           chronoMode={chronoMode}
-          onStartPause={handleStartPause}
           onStop={handleStop}
           onSkipToBreak={handleSkipToBreak}
-          onExit={handleExitFocus}
         />
       )}
 
@@ -633,71 +595,25 @@ export default function ConcentrationPage() {
             </div>
           </div>
 
-          {/* Boutons */}
+          {/* Bouton Démarrer */}
           <div className="flex gap-3 mt-2">
-            {phase !== "idle" && (
-              <button onClick={handleStop}
-                className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-95"
-                style={{ background: colors.bg, border: `1.5px solid ${colors.border}` }}
-                aria-label="Arrêter"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect x="3" y="3" width="10" height="10" rx="2" fill={colors.text2} />
-                </svg>
-              </button>
-            )}
-
             <button
-              onClick={phase !== "idle" ? handleStartPause : () => { setBgIndex(Math.floor(Math.random() * POMODORO_BACKGROUNDS.length)); setFocusMode(true); handleStartPause(); }}
-              className="h-12 px-7 rounded-2xl flex items-center gap-2 text-[15px] font-bold transition-all active:scale-95"
+              onClick={handleStart}
+              className="h-12 px-7 rounded-2xl flex items-center gap-2 text-[15px] transition-all active:scale-95"
               style={{
-                background: phase === "break" ? colors.success : colors.primary,
+                background: colors.primary,
                 color: "#fff",
                 fontFamily: font.dm,
                 fontWeight: 700,
-                boxShadow: `0 4px 16px ${phase === "break" ? colors.success : colors.primary}40`,
+                boxShadow: `0 4px 16px ${colors.primary}40`,
               }}
             >
-              {running ? (
-                <><svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <rect x="2" y="1" width="4" height="12" rx="1.5" fill="white" />
-                  <rect x="8" y="1" width="4" height="12" rx="1.5" fill="white" />
-                </svg>Pause</>
-              ) : (
-                <><svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M3 2l10 5-10 5V2z" fill="white" />
-                </svg>
-                {phase === "idle" ? "Démarrer →" : "Reprendre"}</>
-              )}
-            </button>
-
-            {phase === "work" && (
-              <button onClick={handleSkipToBreak}
-                className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-95"
-                style={{ background: colors.bg, border: `1.5px solid ${colors.border}` }}
-                title="Passer à la pause" aria-label="Passer à la pause"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M3 3l6 4-6 4V3z" fill={colors.text2} />
-                  <rect x="11" y="3" width="2" height="10" rx="1" fill={colors.text2} />
-                </svg>
-              </button>
-            )}
-          </div>
-
-          {/* Lien "Ouvrir le mode focus" si timer en cours mais overlay fermé */}
-          {phase !== "idle" && !focusMode && (
-            <button
-              onClick={() => setFocusMode(true)}
-              className="text-[12px] flex items-center gap-1 mt-1 transition-all active:opacity-70"
-              style={{ color: colors.primary, fontFamily: font.dm, fontWeight: 600 }}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M1 1h4M11 1V5M11 1L6 6M5 3H1v8h8V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 2l10 5-10 5V2z" fill="white" />
               </svg>
-              Mode focus
+              Démarrer →
             </button>
-          )}
+          </div>
         </div>
 
         {/* ── Résumé config ── */}
