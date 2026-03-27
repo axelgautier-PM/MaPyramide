@@ -77,8 +77,25 @@ export interface UseCalendarReturn {
   deleteEvent: (id: string) => Promise<void>;
 }
 
+/** Déclenche une sync MP → Google Calendar de façon non bloquante */
+async function triggerGoogleSync(action: "create" | "update" | "delete", payload: {
+  event?: import("@/types/calendar").CalendarEvent;
+  google_event_id?: string;
+  mp_event_id?: string;
+}) {
+  try {
+    await fetch("/api/google-calendar/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...payload }),
+    });
+  } catch {
+    // Sync non bloquant — on n'interrompt pas l'UX si Google échoue
+  }
+}
+
 export function useCalendar(): UseCalendarReturn {
-  const { profile } = useAppStore();
+  const { profile, isGoogleConnected } = useAppStore();
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -131,34 +148,78 @@ export function useCalendar(): UseCalendarReturn {
 
   const addEvent = useCallback(async (form: EventForm) => {
     if (!profile) return;
-    const { error: err } = await supabase.from("calendar_events").insert({
-      user_id: profile.id,
-      ...form,
-    });
+    const { data: created, error: err } = await supabase
+      .from("calendar_events")
+      .insert({ user_id: profile.id, ...form })
+      .select()
+      .single();
     if (err) throw err;
     await load();
-  }, [profile?.id, load]);
+
+    // Sync MP → Google (non récurrents uniquement)
+    if (isGoogleConnected && created && !form.is_recurring) {
+      await triggerGoogleSync("create", {
+        event: created as import("@/types/calendar").CalendarEvent,
+        mp_event_id: created.id as string,
+      });
+    }
+  }, [profile?.id, load, isGoogleConnected]);
 
   const updateEvent = useCallback(async (id: string, form: Partial<EventForm>) => {
     // Les IDs virtuels (récurrents expansés) contiennent un "-YYYY-MM-DD" — on extrait l'UUID de base
     const baseId = id.length > 36 ? id.slice(0, 36) : id;
-    const { error: err } = await supabase
+    const { data: updated, error: err } = await supabase
       .from("calendar_events")
       .update(form)
-      .eq("id", baseId);
+      .eq("id", baseId)
+      .select()
+      .single();
     if (err) throw err;
     await load();
-  }, [load]);
+
+    // Sync MP → Google : chercher le google_event_id dans calendar_sync_map
+    if (isGoogleConnected && updated && !form.is_recurring) {
+      const { data: syncRow } = await supabase
+        .from("calendar_sync_map")
+        .select("google_event_id")
+        .eq("user_id", profile?.id ?? "")
+        .eq("mp_event_id", baseId)
+        .maybeSingle();
+      if (syncRow?.google_event_id) {
+        await triggerGoogleSync("update", {
+          event: updated as import("@/types/calendar").CalendarEvent,
+          google_event_id: syncRow.google_event_id,
+        });
+      }
+    }
+  }, [load, isGoogleConnected, profile?.id]);
 
   const deleteEvent = useCallback(async (id: string) => {
     const baseId = id.length > 36 ? id.slice(0, 36) : id;
+
+    // Récupérer le google_event_id avant suppression (la cascade supprimera la ligne sync_map)
+    let googleEventId: string | null = null;
+    if (isGoogleConnected) {
+      const { data: syncRow } = await supabase
+        .from("calendar_sync_map")
+        .select("google_event_id")
+        .eq("user_id", profile?.id ?? "")
+        .eq("mp_event_id", baseId)
+        .maybeSingle();
+      googleEventId = syncRow?.google_event_id ?? null;
+    }
+
     const { error: err } = await supabase
       .from("calendar_events")
       .delete()
       .eq("id", baseId);
     if (err) throw err;
     await load();
-  }, [load]);
+
+    if (isGoogleConnected && googleEventId) {
+      await triggerGoogleSync("delete", { google_event_id: googleEventId });
+    }
+  }, [load, isGoogleConnected, profile?.id]);
 
   return {
     selectedDate,

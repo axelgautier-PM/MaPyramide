@@ -70,6 +70,16 @@ export function emptyForm(defaults?: Partial<EventForm>): EventForm {
   };
 }
 
+/** Événement Google Calendar affiché en lecture seule dans la vue semaine */
+export interface GoogleCalendarEventOverlay {
+  id: string;
+  title: string;
+  event_date: string;        // YYYY-MM-DD
+  start_time: string;        // HH:MM
+  duration_minutes: number;
+  is_google_overlay: true;   // discriminant — jamais éditable
+}
+
 /** Groupe horaire pour l'affichage */
 export type TimeGroup = "Matin" | "Après-midi" | "Soir";
 

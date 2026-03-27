@@ -251,12 +251,15 @@ function DeleteModal({ onCancel, onConfirm, loading }: DeleteModalProps) {
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function ProfilPage() {
-  const { profile } = useAppStore();
+  const { profile, isGoogleConnected, setGoogleConnected } = useAppStore();
 
   // Debug mode
   const [debugMode, setDebugMode]   = useState(false);
   const [showDevTools, setShowDevTools] = useState(false);
   const [debugSaved, setDebugSaved] = useState(false);
+
+  // Google Calendar
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Suppression de compte
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -280,6 +283,21 @@ export default function ProfilPage() {
     setDebugMode(next);
     setDebugSaved(true);
     setTimeout(() => setDebugSaved(false), 2000);
+  }
+
+  async function handleGoogleDisconnect() {
+    setGoogleLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("google_oauth_tokens").delete().eq("user_id", user.id);
+      }
+      setGoogleConnected(false);
+    } catch {
+      // Silencieux
+    } finally {
+      setGoogleLoading(false);
+    }
   }
 
   async function handleSignOut() {
@@ -378,6 +396,53 @@ export default function ProfilPage() {
               </p>
             )}
           </div>
+        </div>
+
+        {/* ── Section Google Calendar ── */}
+        <div className="flex flex-col gap-2">
+          <SectionLabel label="Google Calendar" />
+          <GroupCard>
+            {isGoogleConnected ? (
+              <div>
+                {/* Statut connecté */}
+                <div
+                  className="flex items-center gap-3 px-5 py-4"
+                  style={{ borderBottom: `1px solid ${colors.border}` }}
+                >
+                  <span className="text-[18px] shrink-0">🗓️</span>
+                  <div className="flex-1">
+                    <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
+                      Google Calendar connecté
+                    </p>
+                    <p className="text-[12px] mt-0.5" style={{ fontFamily: font.dm, color: colors.success }}>
+                      ✓ Sync bidirectionnelle active
+                    </p>
+                  </div>
+                </div>
+                {/* Bouton déconnexion Google */}
+                <ActionRow
+                  icon="🔌"
+                  label={googleLoading ? "Déconnexion…" : "Déconnecter Google Calendar"}
+                  description="Supprime la sync — tes créneaux MP restent intacts"
+                  color={colors.danger}
+                  onClick={handleGoogleDisconnect}
+                  first={false}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 px-5 py-4">
+                <span className="text-[18px] shrink-0">🗓️</span>
+                <div className="flex-1">
+                  <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
+                    Google Calendar
+                  </p>
+                  <p className="text-[12px] mt-0.5" style={{ fontFamily: font.dm, color: colors.text3 }}>
+                    Non connecté — reconnecte-toi avec Google pour activer la sync
+                  </p>
+                </div>
+              </div>
+            )}
+          </GroupCard>
         </div>
 
         {/* ── Section Compte ── */}

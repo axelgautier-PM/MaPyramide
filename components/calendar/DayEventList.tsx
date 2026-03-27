@@ -1,15 +1,19 @@
 "use client";
 
-import type { CalendarEvent } from "@/types/calendar";
+import type { CalendarEvent, GoogleCalendarEventOverlay } from "@/types/calendar";
 import { getTimeGroup } from "@/types/calendar";
 import { EventCard } from "./EventCard";
+import { GoogleEventCard } from "./GoogleEventCard";
 import { colors, font } from "@/lib/tokens";
 
 const GROUP_ORDER = ["Matin", "Après-midi", "Soir"] as const;
 
+type AnyEvent = CalendarEvent | GoogleCalendarEventOverlay;
+
 interface DayEventListProps {
   date: Date;
   events: CalendarEvent[];
+  googleEvents?: GoogleCalendarEventOverlay[];
   onTapEvent: (event: CalendarEvent) => void;
   onAddEvent: () => void;
 }
@@ -20,16 +24,20 @@ const MONTHS_LONG = [
 ];
 const DAYS_LONG = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 
-export function DayEventList({ date, events, onTapEvent, onAddEvent }: DayEventListProps) {
+export function DayEventList({ date, events, googleEvents = [], onTapEvent, onAddEvent }: DayEventListProps) {
   const dayLabel = `${DAYS_LONG[date.getDay()]} ${date.getDate()} ${MONTHS_LONG[date.getMonth()]}`;
 
-  // Grouper les événements par Matin / Après-midi / Soir
-  const grouped = GROUP_ORDER.reduce<Record<string, CalendarEvent[]>>((acc, g) => {
-    acc[g] = events.filter((e) => getTimeGroup(e.start_time) === g);
+  // Fusionner et trier MP + Google par heure de début
+  const allEvents: AnyEvent[] = [...events, ...googleEvents]
+    .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+  // Grouper tous les événements par Matin / Après-midi / Soir
+  const grouped = GROUP_ORDER.reduce<Record<string, AnyEvent[]>>((acc, g) => {
+    acc[g] = allEvents.filter((e) => getTimeGroup(e.start_time) === g);
     return acc;
   }, {});
 
-  const hasEvents = events.length > 0;
+  const hasEvents = allEvents.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -64,9 +72,13 @@ export function DayEventList({ date, events, onTapEvent, onAddEvent }: DayEventL
             >
               {group}
             </span>
-            {grpEvents.map((evt) => (
-              <EventCard key={evt.id} event={evt} onTap={onTapEvent} />
-            ))}
+            {grpEvents.map((evt) =>
+              "is_google_overlay" in evt ? (
+                <GoogleEventCard key={evt.id} event={evt} />
+              ) : (
+                <EventCard key={evt.id} event={evt} onTap={onTapEvent} />
+              )
+            )}
           </div>
         );
       })}

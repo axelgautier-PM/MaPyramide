@@ -19,7 +19,7 @@ function yesterdayStr() {
 
 // Composant client qui charge le profil au montage et écoute les changements d'auth
 export function AppInitializer({ children }: { children: React.ReactNode }) {
-  const { setProfile, reset } = useAppStore();
+  const { setProfile, reset, setGoogleConnected } = useAppStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -59,6 +59,14 @@ export function AppInitializer({ children }: { children: React.ReactNode }) {
       } else {
         setProfile(profile);
       }
+
+      // Vérifier si l'utilisateur a des tokens Google (connexion OAuth Google)
+      const { data: tokenRow } = await supabase
+        .from("google_oauth_tokens")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setGoogleConnected(!!tokenRow);
     }
 
     loadProfile();

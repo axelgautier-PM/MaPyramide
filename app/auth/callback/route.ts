@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
-// Route appelée par Supabase après clic sur le magic link
+// Route appelée par Supabase après clic sur le magic link ou après OAuth Google
 // Elle échange le token contre une session et écrit les cookies dans la réponse
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -26,10 +26,29 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Auth code flow (fallback PKCE)
+  // Auth code flow : OAuth Google ou fallback PKCE
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (!error && data.session) {
+      const { provider_token, provider_refresh_token, user } = data.session;
+
+      // Persister les tokens Google si c'est une connexion OAuth Google
+      // C'est le seul moment où provider_token et provider_refresh_token sont disponibles ensemble
+      if (provider_token && user) {
+        await supabase.from("google_oauth_tokens").upsert(
+          {
+            user_id: user.id,
+            provider_token,
+            provider_refresh_token: provider_refresh_token ?? null,
+            token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        );
+        // Erreur ignorée volontairement : l'auth elle-même a réussi, la sync peut dégrader silencieusement
+      }
+
       return NextResponse.redirect(`${origin}/app`);
     }
   }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useCalendar, toDateStr } from "@/lib/hooks/useCalendar";
+import { useGoogleCalendar } from "@/lib/hooks/useGoogleCalendar";
 import { WeekStrip } from "@/components/calendar/WeekStrip";
 import { WeeklyCounter } from "@/components/calendar/WeeklyCounter";
 import { DayEventList } from "@/components/calendar/DayEventList";
@@ -25,6 +26,12 @@ export default function CalendrierPage() {
     addEvent,
     deleteEvent,
   } = useCalendar();
+
+  const { googleEvents } = useGoogleCalendar(weekStart);
+
+  // Filtrer les événements Google pour le jour sélectionné
+  const selectedStr = toDateStr(selectedDate);
+  const googleEventsForDay = googleEvents.filter((e) => e.event_date === selectedStr);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [initialForm, setInitialForm] = useState<Partial<EventForm>>({});
@@ -167,6 +174,7 @@ export default function CalendrierPage() {
         <DayEventList
           date={selectedDate}
           events={events}
+          googleEvents={googleEventsForDay}
           onTapEvent={handleTapEvent}
           onAddEvent={() => openAddSheet()}
         />

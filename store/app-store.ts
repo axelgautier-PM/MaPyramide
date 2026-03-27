@@ -20,6 +20,10 @@ interface AppState {
   setCompletions: (completions: ChallengeCompletion[]) => void;
   addCompletion: (completion: ChallengeCompletion) => void;
 
+  // Google Calendar connecté (tokens présents en DB)
+  isGoogleConnected: boolean;
+  setGoogleConnected: (v: boolean) => void;
+
   // Reset (déconnexion)
   reset: () => void;
 }
@@ -43,11 +47,15 @@ export const useAppStore = create<AppState>()(
           completions: [...state.completions, completion],
         })),
 
+      isGoogleConnected: false,
+      setGoogleConnected: (v) => set({ isGoogleConnected: v }),
+
       reset: () =>
         set({
           profile: null,
           progress: {},
           completions: [],
+          isGoogleConnected: false,
         }),
     }),
     {
