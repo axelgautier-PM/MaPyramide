@@ -9,6 +9,13 @@ const WORK_OPTIONS  = [15, 20, 25, 30, 45, 50];
 const BREAK_OPTIONS = [5, 10, 15, 20];
 const MAX_SESSIONS  = 4;
 
+const POMODORO_BACKGROUNDS = [
+  "/pomodoro/bg-1.jpg",
+  "/pomodoro/bg-2.jpg",
+  "/pomodoro/bg-3.jpg",
+  "/pomodoro/bg-4.jpg",
+];
+
 type Phase = "work" | "break" | "idle";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -30,7 +37,7 @@ function TimerArc({
   white?: boolean;
   size?: number;
 }) {
-  const stroke = 5;
+  const stroke = 2.5;
   const r      = (size - stroke * 2) / 2;
   const cx     = size / 2;
   const cy     = size / 2;
@@ -166,7 +173,7 @@ function FocusOverlay({
   running,
   remaining,
   elapsed,
-  sessionNum,
+  bgUrl,
   workDuration,
   breakDuration,
   chronoMode,
@@ -179,7 +186,7 @@ function FocusOverlay({
   running: boolean;
   remaining: number;
   elapsed: number;
-  sessionNum: number;
+  bgUrl: string;
   workDuration: number;
   breakDuration: number;
   chronoMode: boolean;
@@ -194,57 +201,25 @@ function FocusOverlay({
   const isBreak     = phase === "break";
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col safe-top"
-      style={{
-        // Dégradé nuit — ciel étoilé stylisé
-        background: isBreak
-          ? "linear-gradient(180deg, #0a2a1a 0%, #0d3a22 30%, #1a4a2e 60%, #0d2a1a 100%)"
-          : "linear-gradient(180deg, #0d0d2b 0%, #14103d 25%, #1e1650 50%, #2a1f6e 70%, #1a1438 100%)",
-      }}
-    >
-      {/* Étoiles SVG décoratives */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
-        {[...Array(40)].map((_, i) => (
-          <circle
-            key={i}
-            cx={`${(i * 37 + 11) % 100}%`}
-            cy={`${(i * 53 + 7) % 65}%`}
-            r={i % 4 === 0 ? 1.5 : 1}
-            fill="white"
-            opacity={0.2 + (i % 5) * 0.1}
-          />
-        ))}
-      </svg>
-
-      {/* Silhouette montagne SVG */}
-      <svg
-        className="absolute bottom-0 left-0 right-0 w-full pointer-events-none"
-        viewBox="0 0 375 180"
-        preserveAspectRatio="xMidYMax slice"
+    <div className="fixed inset-0 z-50 flex flex-col safe-top" style={{ background: "#000" }}>
+      {/* Photo de fond plein écran */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={bgUrl}
+        alt=""
         aria-hidden="true"
-      >
-        <path
-          d="M0 180 L0 120 L60 80 L100 110 L150 40 L200 90 L240 60 L290 100 L330 70 L375 95 L375 180 Z"
-          fill="rgba(0,0,0,0.45)"
-        />
-        <path
-          d="M0 180 L0 140 L80 130 L130 150 L200 135 L260 145 L320 130 L375 140 L375 180 Z"
-          fill="rgba(0,0,0,0.6)"
-        />
-      </svg>
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        style={{ objectFit: "cover", objectPosition: "center center" }}
+      />
 
-      {/* Reflet lac */}
+      {/* Voile sombre pour lisibilité */}
       <div
-        className="absolute bottom-0 left-0 right-0 pointer-events-none"
-        style={{
-          height: "30%",
-          background: "linear-gradient(to bottom, transparent, rgba(0,0,0,0.3))",
-        }}
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: "rgba(0,0,0,0.35)" }}
       />
 
       {/* ── Bouton quitter (discret, haut droite) ── */}
-      <div className="flex justify-end px-5 pt-4 pb-2">
+      <div className="flex justify-end px-5 pt-4 pb-2 relative z-10">
         <button
           onClick={onExit}
           className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
@@ -263,9 +238,9 @@ function FocusOverlay({
         {/* Label de phase */}
         <p
           className="text-[13px] uppercase tracking-[3px]"
-          style={{ fontFamily: font.dm, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}
+          style={{ fontFamily: font.dm, fontWeight: 500, color: "rgba(255,255,255,0.6)" }}
         >
-          {isBreak ? "Pause" : `Session ${sessionNum} / ${MAX_SESSIONS}`}
+          {isBreak ? "Pause" : "Concentration"}
         </p>
 
         {/* Arc + temps */}
@@ -278,37 +253,18 @@ function FocusOverlay({
               className="tabular-nums leading-none"
               style={{
                 fontFamily: font.dm,
-                fontWeight: 300,
+                fontWeight: 200,
                 fontSize: 64,
                 letterSpacing: "-3px",
-                color: "rgba(255,255,255,0.95)",
+                color: "rgba(255,255,255,0.92)",
               }}
             >
               {displayTime}
             </span>
-            <span style={{ fontFamily: font.dm, fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+            <span style={{ fontFamily: font.dm, fontSize: 12, fontWeight: 300, color: "rgba(255,255,255,0.4)" }}>
               {chronoMode ? "écoulé" : isBreak ? "de pause" : "restant"}
             </span>
           </div>
-        </div>
-
-        {/* Dots sessions */}
-        <div className="flex gap-2.5">
-          {Array.from({ length: MAX_SESSIONS }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-full transition-all"
-              style={{
-                width: i === sessionNum - 1 && phase === "work" ? 20 : 8,
-                height: 8,
-                background: i < sessionNum - 1
-                  ? "rgba(255,255,255,0.7)"
-                  : i === sessionNum - 1
-                  ? "rgba(255,255,255,0.9)"
-                  : "rgba(255,255,255,0.2)",
-              }}
-            />
-          ))}
         </div>
       </div>
 
@@ -387,6 +343,7 @@ export default function ConcentrationPage() {
   const [remaining,  setRemaining]  = useState(25 * 60);
   const [elapsed,    setElapsed]    = useState(0);
   const [sessionNum, setSessionNum] = useState(1);
+  const [bgIndex,    setBgIndex]    = useState(0);
 
   // UI
   const [focusMode,    setFocusMode]    = useState(false);
@@ -453,6 +410,7 @@ export default function ConcentrationPage() {
       setPhase("work");
       setRemaining(workDuration * 60);
       setElapsed(0);
+      setBgIndex(Math.floor(Math.random() * POMODORO_BACKGROUNDS.length));
       setFocusMode(true);
     }
     setRunning((r) => !r);
@@ -494,7 +452,7 @@ export default function ConcentrationPage() {
           running={running}
           remaining={remaining}
           elapsed={elapsed}
-          sessionNum={sessionNum}
+          bgUrl={POMODORO_BACKGROUNDS[bgIndex]}
           workDuration={workDuration}
           breakDuration={breakDuration}
           chronoMode={chronoMode}
@@ -611,7 +569,7 @@ export default function ConcentrationPage() {
             )}
 
             <button
-              onClick={phase !== "idle" ? handleStartPause : () => { setFocusMode(true); handleStartPause(); }}
+              onClick={phase !== "idle" ? handleStartPause : () => { setBgIndex(Math.floor(Math.random() * POMODORO_BACKGROUNDS.length)); setFocusMode(true); handleStartPause(); }}
               className="h-12 px-7 rounded-2xl flex items-center gap-2 text-[15px] font-bold transition-all active:scale-95"
               style={{
                 background: phase === "break" ? colors.success : colors.primary,
