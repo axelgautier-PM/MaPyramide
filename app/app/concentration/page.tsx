@@ -171,83 +171,6 @@ function InteractiveDial({
   );
 }
 
-// ─── Sheet Paramètres (bottom sheet) ─────────────────────────────────────────
-
-function SettingsSheet({
-  breakDuration,
-  chronoMode,
-  onBreakChange,
-  onChronoChange,
-  onClose,
-}: {
-  breakDuration: number;
-  chronoMode: boolean;
-  onBreakChange: (v: number) => void;
-  onChronoChange: (v: boolean) => void;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <div className="fixed inset-0 z-40" style={{ background: "rgba(22,22,42,0.5)" }} onClick={onClose} />
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl px-5 pb-10 pt-3 flex flex-col gap-5"
-        style={{ background: colors.surface, maxWidth: 720, margin: "0 auto" }}
-      >
-        {/* Handle */}
-        <div className="flex justify-center">
-          <div className="w-10 h-1 rounded-full" style={{ background: colors.border }} />
-        </div>
-
-        <p className="text-[17px]" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1 }}>
-          ⚙️ Personnaliser
-        </p>
-
-        {/* Durée de pause */}
-        <div className="flex flex-col gap-2">
-          <p className="text-[11px] uppercase tracking-widest" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text3 }}>
-            Durée de pause
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            {BREAK_OPTIONS.map((opt) => (
-              <button key={opt} onClick={() => onBreakChange(opt)}
-                className="px-3 py-1.5 rounded-full text-[13px] transition-all active:scale-95"
-                style={{
-                  background: breakDuration === opt ? colors.success : colors.bg,
-                  border: `1.5px solid ${breakDuration === opt ? colors.success : colors.border}`,
-                  color: breakDuration === opt ? "#fff" : colors.text2,
-                  fontFamily: font.dm, fontWeight: breakDuration === opt ? 700 : 400,
-                }}>
-                {opt} min
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Mode chronomètre */}
-        <div className="flex items-center justify-between py-1">
-          <div>
-            <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
-              ⏱ Mode chronomètre
-            </p>
-            <p className="text-[12px] mt-0.5" style={{ fontFamily: font.dm, color: colors.text2 }}>
-              Compte depuis 0 au lieu d&apos;un compte à rebours
-            </p>
-          </div>
-          <button
-            onClick={() => onChronoChange(!chronoMode)}
-            className="w-12 h-7 rounded-full transition-all relative shrink-0"
-            style={{ background: chronoMode ? colors.primary : colors.border }}
-            role="switch" aria-checked={chronoMode}
-          >
-            <span className="absolute top-[3px] w-[22px] h-[22px] rounded-full bg-white shadow-sm transition-all"
-              style={{ left: chronoMode ? "calc(100% - 25px)" : 3 }} />
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-
 // ─── Overlay Focus (mode immersif) ────────────────────────────────────────────
 
 function FocusOverlay({
@@ -400,8 +323,8 @@ export default function ConcentrationPage() {
   const [bgIndex,    setBgIndex]    = useState(0);
 
   // UI
-  const [focusMode,    setFocusMode]    = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [focusMode,         setFocusMode]         = useState(false);
+  const [showBreakDropdown, setShowBreakDropdown] = useState(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -510,16 +433,6 @@ export default function ConcentrationPage() {
         />
       )}
 
-      {/* ── Sheet Paramètres ── */}
-      {showSettings && (
-        <SettingsSheet
-          breakDuration={breakDuration}
-          chronoMode={chronoMode}
-          onBreakChange={setBreakDuration}
-          onChronoChange={setChronoMode}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
 
       {/* ── Vue principale ── */}
       <div className="flex flex-col gap-6 pb-4">
@@ -536,21 +449,6 @@ export default function ConcentrationPage() {
             </p>
           </div>
 
-          {/* Bouton paramètres */}
-          <button
-            onClick={() => setShowSettings(true)}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90"
-            style={{ background: colors.surface, border: `1.5px solid ${colors.border}` }}
-            aria-label="Paramètres"
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <circle cx="9" cy="9" r="2.5" stroke={colors.text2} strokeWidth="1.5" />
-              <path
-                d="M9 1.5v2M9 14.5v2M1.5 9h2M14.5 9h2M3.6 3.6l1.4 1.4M13 13l1.4 1.4M3.6 14.4l1.4-1.4M13 5l1.4-1.4"
-                stroke={colors.text2} strokeWidth="1.5" strokeLinecap="round"
-              />
-            </svg>
-          </button>
         </div>
 
         {/* ── Carte timer ── */}
@@ -616,14 +514,17 @@ export default function ConcentrationPage() {
           </div>
         </div>
 
-        {/* ── Résumé config ── */}
+        {/* ── Config inline ── */}
         <div
           className="flex items-center justify-between px-5 py-4 rounded-2xl"
           style={{ background: colors.surface, border: `1.5px solid ${colors.border}` }}
         >
+          {/* Gauche : travail + pause */}
           <div className="flex items-center gap-5">
+
+            {/* Travail — lecture seule (réglé via le cadran) */}
             <div className="flex items-center gap-2">
-              <span className="text-[16px]">🎯</span>
+              <span className="text-[15px]">🎯</span>
               <div>
                 <p className="text-[15px]" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.primary, lineHeight: 1 }}>
                   {workDuration} min
@@ -631,35 +532,93 @@ export default function ConcentrationPage() {
                 <p className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>travail</p>
               </div>
             </div>
+
             <div style={{ width: 1, height: 28, background: colors.border }} />
-            <div className="flex items-center gap-2">
-              <span className="text-[16px]">🌿</span>
-              <div>
-                <p className="text-[15px]" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.success, lineHeight: 1 }}>
-                  {breakDuration} min
-                </p>
-                <p className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>pause</p>
-              </div>
+
+            {/* Pause — cliquable, dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowBreakDropdown((v) => !v)}
+                className="flex items-center gap-2 transition-all active:opacity-70"
+                aria-haspopup="listbox"
+                aria-expanded={showBreakDropdown}
+              >
+                <span className="text-[15px]">🌿</span>
+                <div className="text-left">
+                  <p className="text-[15px]" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.success, lineHeight: 1 }}>
+                    {breakDuration} min
+                  </p>
+                  <p className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>pause</p>
+                </div>
+                <svg
+                  width="12" height="12" viewBox="0 0 12 12" fill="none"
+                  style={{ transform: showBreakDropdown ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+                >
+                  <path d="M2 4l4 4 4-4" stroke={colors.text3} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {/* Dropdown */}
+              {showBreakDropdown && (
+                <>
+                  {/* Overlay pour fermer au clic extérieur */}
+                  <div className="fixed inset-0 z-20" onClick={() => setShowBreakDropdown(false)} />
+                  <div
+                    className="absolute bottom-full left-0 mb-2 rounded-2xl overflow-hidden z-30"
+                    style={{
+                      background: colors.surface,
+                      border: `1.5px solid ${colors.border}`,
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                      minWidth: 140,
+                    }}
+                    role="listbox"
+                  >
+                    {BREAK_OPTIONS.map((opt) => (
+                      <button
+                        key={opt}
+                        role="option"
+                        aria-selected={breakDuration === opt}
+                        onClick={() => { setBreakDuration(opt); setShowBreakDropdown(false); }}
+                        className="w-full px-4 py-2.5 flex items-center justify-between text-[14px] transition-all active:opacity-70"
+                        style={{
+                          fontFamily: font.dm,
+                          fontWeight: breakDuration === opt ? 700 : 400,
+                          color: breakDuration === opt ? colors.success : colors.text1,
+                          background: breakDuration === opt ? `${colors.success}0f` : "transparent",
+                        }}
+                      >
+                        {opt} min
+                        {breakDuration === opt && (
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2 7l4 4 6-7" stroke={colors.success} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-            {chronoMode && (
-              <>
-                <div style={{ width: 1, height: 28, background: colors.border }} />
-                <p className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>⏱ Chrono</p>
-              </>
-            )}
+
           </div>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="w-8 h-8 flex items-center justify-center rounded-xl transition-all active:scale-90"
-            style={{ background: colors.bg, border: `1.5px solid ${colors.border}` }}
-            aria-label="Personnaliser"
-          >
-            <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
-              <circle cx="9" cy="9" r="2.5" stroke={colors.text2} strokeWidth="1.5" />
-              <path d="M9 1.5v2M9 14.5v2M1.5 9h2M14.5 9h2M3.6 3.6l1.4 1.4M13 13l1.4 1.4M3.6 14.4l1.4-1.4M13 5l1.4-1.4"
-                stroke={colors.text2} strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
+
+          {/* Droite : toggle chronomètre */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>⏱</span>
+            <button
+              onClick={() => setChronoMode((v) => !v)}
+              className="w-11 h-6 rounded-full transition-all relative shrink-0"
+              style={{ background: chronoMode ? colors.primary : colors.border }}
+              role="switch"
+              aria-checked={chronoMode}
+              aria-label="Mode chronomètre"
+            >
+              <span
+                className="absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white shadow-sm transition-all"
+                style={{ left: chronoMode ? "calc(100% - 21px)" : 3 }}
+              />
+            </button>
+          </div>
         </div>
 
       </div>
