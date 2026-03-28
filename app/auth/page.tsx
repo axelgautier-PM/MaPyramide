@@ -265,6 +265,7 @@ export default function AuthPage() {
                 onClick={goToSignup}
                 className="w-full py-3.5 rounded-2xl text-[15px] transition-all active:scale-[0.98]"
                 style={{
+                  marginTop:  16,
                   background: colors.bg,
                   border:     `1.5px solid ${colors.border}`,
                   color:      colors.text1,
