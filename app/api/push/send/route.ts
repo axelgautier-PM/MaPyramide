@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 
 // Configuration VAPID — clés serveur uniquement
 webpush.setVapidDetails(
@@ -61,20 +63,74 @@ async function sendToSubscription(
   return { success: false };
 }
 
+// ─── Vérifier l'authentification ──────────────────────────────────────────────
+// Mode 1 (cron) : Authorization: Bearer <CRON_SECRET>
+// Mode 2 (user) : session Supabase via cookies → userId doit correspondre
+
+async function getAuthContext(req: NextRequest): Promise<
+  | { type: "cron" }
+  | { type: "user"; userId: string }
+  | { type: "unauthorized" }
+> {
+  // Mode cron — secret partagé
+  const authHeader = req.headers.get("authorization");
+  if (
+    process.env.CRON_SECRET &&
+    authHeader === `Bearer ${process.env.CRON_SECRET}`
+  ) {
+    return { type: "cron" };
+  }
+
+  // Mode user — session Supabase (cookie)
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll(list) {
+          list.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) return { type: "user", userId: user.id };
+
+  return { type: "unauthorized" };
+}
+
 // ─── POST /api/push/send ──────────────────────────────────────────────────────
 // body: { userId?: string, title: string, body: string, url?: string }
 // Si userId → envoie aux appareils de cet user uniquement
-// Si pas de userId → broadcast (usage cron uniquement)
+// Si pas de userId → broadcast (cron uniquement)
 
 export async function POST(req: NextRequest) {
-  // Protection minimale : endpoint interne uniquement
-  // Les crons Vercel et la page profil (bouton test) appellent cette route
+  const auth = await getAuthContext(req);
+
+  if (auth.type === "unauthorized") {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
   const body = await req.json();
-  const { userId, title, body: notifBody, url } = body;
+  const { userId: requestedUserId, title, body: notifBody, url } = body;
 
   if (!title) {
     return NextResponse.json({ error: "title requis" }, { status: 400 });
   }
+
+  // Les utilisateurs ne peuvent envoyer qu'à eux-mêmes
+  // Le broadcast (pas de userId) est réservé au cron
+  if (auth.type === "user") {
+    if (!requestedUserId || requestedUserId !== auth.userId) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    }
+  }
+
+  const userId = auth.type === "cron" ? requestedUserId : auth.userId;
 
   const supabase = getServiceClient();
 
@@ -84,7 +140,7 @@ export async function POST(req: NextRequest) {
     .select("platform, endpoint, p256dh, auth");
 
   if (userId) {
-    query = query.eq("user_id", userId);
+    query = query.eq("user_id", userId as string);
   }
 
   const { data: subscriptions, error } = await query;

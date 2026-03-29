@@ -5,16 +5,23 @@ import { supabase } from "@/lib/supabase";
 import { useAppStore } from "@/store/app-store";
 import { useRouter } from "next/navigation";
 
-// Retourne la date locale au format YYYY-MM-DD
+// Retourne la date locale au format YYYY-MM-DD (sans conversion UTC)
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function todayStr() {
-  return new Date().toISOString().split("T")[0];
+  return toLocalDateStr(new Date());
 }
 
 // Retourne hier au format YYYY-MM-DD
 function yesterdayStr() {
   const d = new Date();
   d.setDate(d.getDate() - 1);
-  return d.toISOString().split("T")[0];
+  return toLocalDateStr(d);
 }
 
 // Composant client qui charge le profil au montage et écoute les changements d'auth

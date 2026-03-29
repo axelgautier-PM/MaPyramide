@@ -19,7 +19,10 @@ export async function GET(req: NextRequest) {
 
     const res = await fetch(`${baseUrl}/api/push/send`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.CRON_SECRET}`,
+      },
       body: JSON.stringify({
         // Pas de userId → broadcast à tous les abonnés
         title: "MaPyramide 🌅",

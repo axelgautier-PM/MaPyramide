@@ -24,6 +24,7 @@ export default function CalendrierPage() {
     loading,
     error,
     addEvent,
+    updateEvent,
     deleteEvent,
   } = useCalendar();
 
@@ -103,10 +104,10 @@ export default function CalendrierPage() {
 
   async function handleSave(form: EventForm) {
     if (activeEvent) {
-      // Mise à jour — supprime + recrée (simplifié pour V2)
-      await deleteEvent(activeEvent.id);
+      await updateEvent(activeEvent.id, form);
+    } else {
+      await addEvent(form);
     }
-    await addEvent(form);
   }
 
   return (
