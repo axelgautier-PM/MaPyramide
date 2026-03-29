@@ -82,7 +82,7 @@ export const domainTokens: Record<string, {
     border: "#FFD0AA",
     shadow: "rgba(255,140,66,0.25)",
   },
-  "bien-etre": {
+  bienetre: {
     color:  "#8B5CF6",
     bg:     "#F3F0FF",
     border: "#C4B8FF",
