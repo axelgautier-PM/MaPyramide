@@ -33,8 +33,12 @@ Découvrir un défi → Le compléter → Mesurer sa progression → Planifier d
 - [x] `scheduling_type` sur chaque défi (null / one_time / recurring)
 - [x] Table `challenge_notes` — commentaires admin par défi
 
+- [x] Notifications push Web (VAPID, service worker, iOS 16.4+)
+- [x] Page Concentration — timer Pomodoro interactif (cadran SVG, overlay immersif)
+- [x] Google Calendar OAuth — sync bidirectionnelle MP ↔ Google (calendar_sync_map)
+- [x] `manifest.json` PWA — icons 192/512, start_url, orientation portrait
+
 ### Features exclues (Phase 2 ou plus)
-- ❌ Notifications push (service worker, VAPID)
 - ❌ Mode hors-ligne complet (SW + cache réseau)
 - ❌ Statistiques avancées / graphs
 - ❌ Partage social / mode équipe
@@ -46,7 +50,7 @@ Découvrir un défi → Le compléter → Mesurer sa progression → Planifier d
 
 | Outil | Version | Rôle |
 |---|---|---|
-| Next.js | 14 (App Router) | Framework PWA |
+| Next.js | 16.2 (App Router) | Framework PWA |
 | TypeScript | 5.x | Langage |
 | Tailwind CSS | v4 | Styles utilitaires |
 | Zustand | ^5 | État global (persist) |
@@ -152,18 +156,24 @@ Supprime toutes les données user + entrée auth.users (SECURITY DEFINER, réser
 
 ### Palette — `lib/tokens.ts`
 ```ts
-primary       = '#6C63FF'   // violet principal
-primaryLight  = '#F0EEFF'   // fond violet très léger
-bg            = '#FAFAFA'   // fond global blanc cassé
-surface       = '#FFFFFF'   // cartes blanc pur
-border        = '#F0F0F5'   // bordures très légères
-text1         = '#1A1A2E'   // texte principal quasi-noir
-text2         = '#6B6B8A'   // texte secondaire
-text3         = '#A0A0B8'   // texte tertiaire / labels
-success       = '#2E7D32'
-successLight  = '#EDFAF4'
-danger        = '#D32F2F'
-dangerLight   = '#FFF0F0'
+primary        = '#6C63FF'   // violet principal
+primaryLight   = '#EEF0FF'   // fond violet très léger
+bg             = '#F7F7FA'   // fond global blanc-bleu
+surface        = '#FFFFFF'   // cartes blanc pur
+border         = '#EBEBF2'   // bordures légères
+border2        = '#D4D4E8'   // bordures marquées
+text1          = '#16162A'   // texte principal quasi-noir
+text2          = '#7B7B99'   // texte secondaire
+text3          = '#B0B0C8'   // texte tertiaire / labels
+success        = '#3EC98A'   // vert principal
+successLight   = '#EDFAF4'   // fond vert très léger
+successDark    = '#2E7D0E'   // vert foncé — objectif atteint
+successMid     = '#AAD8A0'   // vert pâle — progression en cours
+danger         = '#FF6B6B'   // rouge
+dangerLight    = '#FFF0F0'   // fond rouge très léger
+warning        = '#FF8C42'   // orange streak / avertissement
+warningLight   = '#FFF3EB'   // fond orange très léger
+warningBorder  = '#FFD0AA'   // bordure orange
 ```
 
 ### Principes
@@ -254,9 +264,13 @@ Routes     :  /app           /app/defis  /app/calendrier  /app/profil
 006_challenge_scheduling.sql ← colonne scheduling_type
 007_scheduling_debug.sql    ← UPDATE scheduling_type + table challenge_notes
 008_delete_user_rpc.sql     ← fonction RPC suppression compte
+009_google_oauth_tokens.sql ← tokens OAuth Google Calendar
+010_calendar_sync_map.sql   ← table de sync MP ↔ Google Calendar
+011_push_subscriptions.sql  ← abonnements Web Push (VAPID)
+012_delete_user_rpc_update.sql ← mise à jour RPC : couvre tables 009-011
 ```
 
 ---
 
-*Dernière mise à jour : 2026-03-26*
+*Dernière mise à jour : 2026-03-29*
 *Projet : MaPyramide — Application de développement personnel*

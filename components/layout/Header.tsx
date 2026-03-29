@@ -33,9 +33,9 @@ export function Header() {
             <div
               className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px]"
               style={{
-                background: "#FFF3EB",
-                border:     "1px solid #FFD0AA",
-                color:      "#FF8C42",
+                background: colors.warningLight,
+                border:     `1px solid ${colors.warningBorder}`,
+                color:      colors.warning,
                 fontFamily: font.dm,
                 fontWeight: 700,
               }}

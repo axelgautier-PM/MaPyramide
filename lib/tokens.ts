@@ -21,10 +21,17 @@ export const colors = {
   primaryLight: "#EEF0FF",
 
   /* États */
-  success:     "#3EC98A",
+  success:      "#3EC98A",
   successLight: "#EDFAF4",
-  danger:      "#FF6B6B",
-  dangerLight: "#FFF0F0",
+  successDark:  "#2E7D0E",  // vert foncé — objectif atteint, indicateurs positifs
+  successMid:   "#AAD8A0",  // vert pâle — barre de progression en cours
+  danger:       "#FF6B6B",
+  dangerLight:  "#FFF0F0",
+
+  /* Streak / avertissement (orange) */
+  warning:       "#FF8C42",
+  warningLight:  "#FFF3EB",
+  warningBorder: "#FFD0AA",
 } as const;
 
 export const shadows = {
