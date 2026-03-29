@@ -18,7 +18,19 @@ function getServiceClient() {
 }
 
 // ─── Abstraction multi-plateforme ─────────────────────────────────────────────
-// Web Push maintenant — APNs/FCM ajoutés ici si passage App Store natif
+//
+// Architecture conçue pour être compatible App Store natif (futur).
+//
+// Aujourd'hui : Web Push (VAPID) — PWA installée depuis Safari (iOS 16.4+)
+//
+// Demain, si passage natif via Capacitor ou React Native :
+//   1. Ajouter platform='apns' dans push_subscriptions (colonne device_token)
+//   2. Implémenter le cas "apns" ici dans sendToSubscription() avec node-apn
+//      ou le SDK Firebase Admin pour FCM Android
+//   3. Toute la logique métier (quand envoyer, quoi envoyer, cron quotidien)
+//      reste intacte — seul le transport change dans cette fonction
+//
+// La table push_subscriptions supporte déjà platform='web'|'apns'|'fcm'.
 
 interface PushSubscriptionRow {
   platform: string;
@@ -32,13 +44,20 @@ async function sendToSubscription(
   payload: string
 ): Promise<{ success: boolean; endpoint?: string }> {
   if (sub.platform === "web" && sub.endpoint && sub.p256dh && sub.auth) {
+    // Transport Web Push (VAPID) — actif maintenant
     await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
       payload
     );
     return { success: true, endpoint: sub.endpoint };
   }
-  // Stub APNs / FCM — implémentation à ajouter si App Store
+
+  // Transport APNs (iOS natif via Capacitor) — à implémenter si App Store
+  // if (sub.platform === "apns" && sub.device_token) { ... }
+
+  // Transport FCM (Android natif) — à implémenter si Google Play
+  // if (sub.platform === "fcm" && sub.device_token) { ... }
+
   return { success: false };
 }
 
