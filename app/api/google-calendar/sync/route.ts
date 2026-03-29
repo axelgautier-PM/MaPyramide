@@ -69,12 +69,17 @@ export async function POST(request: NextRequest) {
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
   if (authErr || !user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
-  const body = await request.json() as {
+  let body: {
     action: "create" | "update" | "delete";
     event?: CalendarEvent;
     google_event_id?: string;
     mp_event_id?: string;
   };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+  }
 
   // Ignorer les événements récurrents (RRULE non implémenté en MVP)
   if (body.event?.is_recurring) {

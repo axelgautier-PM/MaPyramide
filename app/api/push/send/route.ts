@@ -115,7 +115,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const body = await req.json();
+  let body: { userId?: string; title?: string; body?: string; url?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+  }
   const { userId: requestedUserId, title, body: notifBody, url } = body;
 
   if (!title) {

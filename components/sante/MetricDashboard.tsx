@@ -1,6 +1,8 @@
 "use client";
 
-import { METRICS_CONFIG } from "@/types";
+import { DOMAIN_METRICS } from "@/lib/metrics-config";
+
+const METRICS_CONFIG = DOMAIN_METRICS["sante"] ?? [];
 
 interface MetricDashboardProps {
   metrics: Record<string, number>;
@@ -29,17 +31,18 @@ export function MetricDashboard({ metrics }: MetricDashboardProps) {
 
           // Calculer la progression vers l'objectif
           let pct = 0;
-          if (hasValue) {
+          const goal = config.goal;
+          if (hasValue && goal !== null) {
             if (config.direction === "up") {
-              pct = Math.min(100, Math.round((value / config.goal) * 100));
+              pct = Math.min(100, Math.round((value / goal) * 100));
             } else {
               // "down" = plus bas = mieux (masse grasse)
-              pct = value <= config.goal ? 100 : Math.max(0, Math.round((1 - (value - config.goal) / config.goal) * 100));
+              pct = value <= goal ? 100 : Math.max(0, Math.round((1 - (value - goal) / goal) * 100));
             }
           }
 
-          const isGood = hasValue && (
-            config.direction === "up" ? value >= config.goal : value <= config.goal
+          const isGood = hasValue && goal !== null && (
+            config.direction === "up" ? value >= goal : value <= goal
           );
 
           // Si nombre impair d'items, le dernier prend toute la largeur
@@ -103,12 +106,12 @@ export function MetricDashboard({ metrics }: MetricDashboardProps) {
                 >
                   {config.unit}
                 </span>
-                {hasValue && (
+                {hasValue && goal !== null && (
                   <span
                     className="text-[11px] ml-auto"
                     style={{ color: "#A8A5A0", fontFamily: "var(--font-dm-sans)" }}
                   >
-                    obj. {config.goal} {config.unit}
+                    obj. {goal} {config.unit}
                   </span>
                 )}
               </div>

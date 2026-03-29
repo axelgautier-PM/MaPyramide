@@ -108,6 +108,7 @@ export function useCalendar(): UseCalendarReturn {
   const weekStart = getWeekStart(selectedDate);
   const weekDays = getWeekDays(weekStart);
   const weekEnd = weekDays[6];
+  const weekStartStr = toDateStr(weekStart);
 
   // Charge les événements de la semaine (+ récurrents pouvant tomber dans la semaine)
   const load = useCallback(async () => {
@@ -120,7 +121,7 @@ export function useCalendar(): UseCalendarReturn {
         .select("*")
         .eq("user_id", profile.id)
         .or(
-          `is_recurring.eq.true,and(event_date.gte.${toDateStr(weekStart)},event_date.lte.${toDateStr(weekEnd)})`
+          `is_recurring.eq.true,and(event_date.gte.${weekStartStr},event_date.lte.${toDateStr(weekEnd)})`
         )
         .order("start_time");
 
@@ -132,7 +133,7 @@ export function useCalendar(): UseCalendarReturn {
     } finally {
       setLoading(false);
     }
-  }, [profile?.id, toDateStr(weekStart)]);
+  }, [profile?.id, weekStartStr]);
 
   useEffect(() => { load(); }, [load]);
 

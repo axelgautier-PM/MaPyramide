@@ -30,7 +30,12 @@ export async function POST(req: NextRequest) {
   const { supabase, user } = await getSupabaseUser();
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
-  const body = await req.json();
+  let body: { endpoint?: string; p256dh?: string; auth?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+  }
   const { endpoint, p256dh, auth } = body;
 
   if (!endpoint || !p256dh || !auth) {
@@ -61,7 +66,12 @@ export async function DELETE(req: NextRequest) {
   const { supabase, user } = await getSupabaseUser();
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
-  const body = await req.json();
+  let body: { endpoint?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+  }
   const { endpoint } = body;
 
   if (!endpoint) {
