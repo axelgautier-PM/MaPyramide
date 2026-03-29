@@ -71,6 +71,13 @@ export function AppInitializer({ children }: { children: React.ReactNode }) {
 
     loadProfile();
 
+    // Enregistrer le service worker pour les push notifications
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Silencieux — SW non critique pour le fonctionnement de l'app
+      });
+    }
+
     // Écouter les changements de session (déconnexion, expiration)
     const {
       data: { subscription },

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAppStore } from "@/store/app-store";
+import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
 import { colors, font, radii, shadows } from "@/lib/tokens";
 
 // ─── Version de l'application ────────────────────────────────────────────────
@@ -253,6 +254,11 @@ function DeleteModal({ onCancel, onConfirm, loading }: DeleteModalProps) {
 export default function ProfilPage() {
   const { profile, isGoogleConnected, setGoogleConnected } = useAppStore();
 
+  // Push notifications
+  const push = usePushNotifications();
+  const [testSent,    setTestSent]    = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
+
   // Debug mode
   const [debugMode, setDebugMode]   = useState(false);
   const [showDevTools, setShowDevTools] = useState(false);
@@ -283,6 +289,27 @@ export default function ProfilPage() {
     setDebugMode(next);
     setDebugSaved(true);
     setTimeout(() => setDebugSaved(false), 2000);
+  }
+
+  async function handleTestNotification() {
+    setTestLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user?.id,
+          title:  "MaPyramide 🔔",
+          body:   "Les notifications fonctionnent !",
+          url:    "/app",
+        }),
+      });
+      setTestSent(true);
+      setTimeout(() => setTestSent(false), 3000);
+    } finally {
+      setTestLoading(false);
+    }
   }
 
   async function handleGoogleDisconnect() {
@@ -396,6 +423,64 @@ export default function ProfilPage() {
               </p>
             )}
           </div>
+        </div>
+
+        {/* ── Section Notifications ── */}
+        <div className="flex flex-col gap-2">
+          <SectionLabel label="Notifications" />
+          <GroupCard>
+            {!push.isSupported ? (
+              /* Navigateur non supporté ou PWA non installée */
+              <div className="flex items-start gap-3 px-5 py-4">
+                <span className="text-[18px] shrink-0 mt-0.5">🔔</span>
+                <div>
+                  <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
+                    Notifications push
+                  </p>
+                  <p className="text-[12px] mt-1 leading-relaxed" style={{ fontFamily: font.dm, color: colors.text2 }}>
+                    Pour recevoir des notifications, installe l&apos;app sur ton écran d&apos;accueil via Safari → &quot;Sur l&apos;écran d&apos;accueil&quot; (iOS 16.4+).
+                  </p>
+                </div>
+              </div>
+            ) : (
+              /* Push supporté */
+              <>
+                <ToggleRow
+                  label="Activer les notifications"
+                  description={
+                    push.permission === "denied"
+                      ? "Bloqué — autorise dans Réglages > Safari"
+                      : push.isSubscribed
+                      ? "Tu recevras un rappel quotidien à 8h"
+                      : "Rappel quotidien pour tes défis"
+                  }
+                  value={push.isSubscribed}
+                  onToggle={push.isSubscribed ? push.unsubscribe : push.subscribe}
+                />
+
+                {/* Bouton test — visible uniquement si abonné */}
+                {push.isSubscribed && (
+                  <div
+                    className="px-5 py-3"
+                    style={{ borderTop: `1px solid ${colors.border}` }}
+                  >
+                    <button
+                      onClick={handleTestNotification}
+                      disabled={testLoading}
+                      className="text-[13px] transition-all active:opacity-60"
+                      style={{
+                        fontFamily: font.dm,
+                        fontWeight: 500,
+                        color: testSent ? colors.success : colors.primary,
+                      }}
+                    >
+                      {testSent ? "✓ Notification envoyée !" : testLoading ? "Envoi…" : "Envoyer une notification test"}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </GroupCard>
         </div>
 
         {/* ── Section Google Calendar ── */}
