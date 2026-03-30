@@ -11,7 +11,7 @@ function getAppUrl(req: NextRequest): string {
 // PATCH /api/calendar/events/[id] — Mettre à jour un événement et replanifier les rappels
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createSupabaseServerClient();
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
@@ -19,7 +19,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
-  const baseId = params.id.length > 36 ? params.id.slice(0, 36) : params.id;
+  const { id } = await params;
+  const baseId = id.length > 36 ? id.slice(0, 36) : id;
 
   let form: Partial<EventForm>;
   try {
@@ -95,7 +96,7 @@ export async function PATCH(
 // DELETE /api/calendar/events/[id] — Supprimer un événement et annuler ses rappels QStash
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createSupabaseServerClient();
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
@@ -103,7 +104,8 @@ export async function DELETE(
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
-  const baseId = params.id.length > 36 ? params.id.slice(0, 36) : params.id;
+  const { id } = await params;
+  const baseId = id.length > 36 ? id.slice(0, 36) : id;
 
   // Récupérer les job IDs avant suppression
   const { data: existing } = await supabase
