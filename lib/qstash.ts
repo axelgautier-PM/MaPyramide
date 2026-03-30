@@ -7,7 +7,7 @@ import { Client } from "@upstash/qstash";
 
 // Initialisation lazy — ne plante pas si la variable est absente (dev sans QStash)
 let _client: Client | null = null;
-function getClient(): Client | null {
+export function getClient(): Client | null {
   if (!process.env.QSTASH_TOKEN) return null;
   if (!_client) _client = new Client({ token: process.env.QSTASH_TOKEN });
   return _client;

@@ -69,29 +69,19 @@ export default function ProfilPage() {
   async function handleTestNotification() {
     setTestLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const res  = await fetch("/api/push/send", {
+      // Passe par QStash (délai 5s) pour valider toute la chaîne de notifications
+      const res  = await fetch("/api/push/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user?.id,
-          title:  "MaPyramide 🔔",
-          body:   "Les notifications fonctionnent !",
-          url:    "/app",
-        }),
       });
-      const json = await res.json() as { ok?: boolean; sent?: number; error?: string };
+      const json = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok || json.error) {
         console.error("[test notif] erreur:", json.error ?? res.status);
         alert(`Erreur notifications : ${json.error ?? "Vérifier les variables d'environnement Vercel"}`);
         return;
       }
-      if (json.sent === 0) {
-        alert("Notification envoyée mais aucun appareil abonné trouvé. Active les notifications puis réessaie.");
-        return;
-      }
       setTestSent(true);
-      setTimeout(() => setTestSent(false), 3000);
+      setTimeout(() => setTestSent(false), 5000);
     } catch (err) {
       console.error("[test notif]", err);
     } finally {
@@ -386,7 +376,7 @@ export default function ProfilPage() {
                           color: testSent ? colors.success : colors.primary,
                         }}
                       >
-                        {testSent ? "✓ Notification envoyée !" : testLoading ? "Envoi…" : "Envoyer une notification test"}
+                        {testSent ? "✓ Arrivée dans 5s…" : testLoading ? "Planification…" : "Envoyer une notification test"}
                       </button>
                     </div>
                   </>
