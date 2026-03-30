@@ -13,18 +13,28 @@ export async function GET(request: NextRequest) {
   if (authErr || !user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
   const accessToken = await getGoogleAccessToken(user.id);
-  if (!accessToken) return NextResponse.json({ error: "Token Google non disponible — reconnecte Google Calendar dans ton profil" }, { status: 401 });
+  if (!accessToken) {
+    console.error("[calendars] getGoogleAccessToken returned null pour user", user.id);
+    return NextResponse.json({ error: "Token Google non disponible — reconnecte Google Calendar dans ton profil" }, { status: 401 });
+  }
 
   // Récupère la liste des calendriers depuis Google
   const res = await fetch(`${GOOGLE_API}/users/me/calendarList`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) return NextResponse.json({ error: "Erreur Google Calendar (calendarList)" }, { status: 502 });
 
-  const data = await res.json() as {
+  const rawBody = await res.text();
+  console.log("[calendars] Google calendarList status:", res.status, "body:", rawBody.slice(0, 500));
+
+  if (!res.ok) {
+    return NextResponse.json({ error: `Erreur Google Calendar ${res.status}: ${rawBody.slice(0, 200)}` }, { status: 502 });
+  }
+
+  const data = JSON.parse(rawBody) as {
     items?: Array<{ id: string; summary: string; backgroundColor?: string }>;
   };
   const googleCals = data.items ?? [];
+  console.log("[calendars] Nb calendriers trouvés:", googleCals.length);
 
   // Récupère les préférences sauvegardées (couleur choisie, is_selected)
   const { data: savedPrefs } = await supabase

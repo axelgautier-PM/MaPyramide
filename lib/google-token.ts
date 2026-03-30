@@ -15,7 +15,10 @@ export async function getGoogleAccessToken(userId: string): Promise<string | nul
     .eq("user_id", userId)
     .single();
 
-  if (error || !tokenRow) return null;
+  if (error || !tokenRow) {
+    console.error("[getGoogleAccessToken] Pas de token en DB pour user", userId, error?.message);
+    return null;
+  }
 
   // Token encore valide (marge de 5 minutes)
   const expiresAt = tokenRow.token_expires_at
@@ -23,8 +26,10 @@ export async function getGoogleAccessToken(userId: string): Promise<string | nul
     : 0;
 
   if (expiresAt > Date.now() + 5 * 60 * 1000) {
+    console.log("[getGoogleAccessToken] Token valide en cache, exp:", new Date(expiresAt).toISOString());
     return tokenRow.provider_token;
   }
+  console.log("[getGoogleAccessToken] Token expiré, tentative refresh...");
 
   // Token expiré — rafraîchir via le refresh_token
   if (!tokenRow.provider_refresh_token) return null;
