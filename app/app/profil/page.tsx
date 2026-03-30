@@ -7,14 +7,26 @@ import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
 import { colors, font, shadows } from "@/lib/tokens";
 import { ToggleRow, ActionRow, SectionLabel, GroupCard } from "@/components/profil/ProfilUI";
 import { DeleteModal } from "@/components/profil/DeleteModal";
+import { GoogleCalendarPicker } from "@/components/calendar/GoogleCalendarPicker";
+import type { GoogleCalendarItem } from "@/components/calendar/GoogleCalendarPicker";
 
 // ─── Version de l'application ────────────────────────────────────────────────
 const APP_VERSION = "0.1.0";
 
+const DAY_LABELS = [
+  { label: "L",  value: 1 },
+  { label: "M",  value: 2 },
+  { label: "Me", value: 3 },
+  { label: "J",  value: 4 },
+  { label: "V",  value: 5 },
+  { label: "S",  value: 6 },
+  { label: "D",  value: 7 },
+];
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function ProfilPage() {
-  const { profile, isGoogleConnected, setGoogleConnected } = useAppStore();
+  const { profile, isGoogleConnected, setGoogleConnected, notifPrefs, setNotifPrefs } = useAppStore();
 
   // Push notifications
   const push = usePushNotifications();
@@ -22,16 +34,17 @@ export default function ProfilPage() {
   const [testLoading, setTestLoading] = useState(false);
 
   // Debug mode
-  const [debugMode, setDebugMode]   = useState(false);
+  const [debugMode,    setDebugMode]    = useState(false);
   const [showDevTools, setShowDevTools] = useState(false);
-  const [debugSaved, setDebugSaved] = useState(false);
+  const [debugSaved,   setDebugSaved]   = useState(false);
 
   // Google Calendar
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleLoading,       setGoogleLoading]       = useState(false);
+  const [showCalendarPicker,  setShowCalendarPicker]  = useState(false);
 
   // Suppression de compte
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteLoading, setDeleteLoading]     = useState(false);
+  const [deleteLoading,   setDeleteLoading]   = useState(false);
 
   // Compteur secret (5 taps sur le footer pour ouvrir dev tools)
   const tapCount = useRef(0);
@@ -74,6 +87,7 @@ export default function ProfilPage() {
     }
   }
 
+  /** Déconnexion Google Calendar — supprime les tokens mais pas les événements MP */
   async function handleGoogleDisconnect() {
     setGoogleLoading(true);
     try {
@@ -89,6 +103,31 @@ export default function ProfilPage() {
     }
   }
 
+  /** Reconnexion Google Calendar — relance le flux OAuth avec le scope Calendar */
+  async function handleGoogleConnect() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/app/profil`,
+        scopes: "https://www.googleapis.com/auth/calendar",
+        queryParams: {
+          access_type: "offline",
+          prompt:      "consent",
+        },
+      },
+    });
+    if (error) console.error("[Profil] Google connect error:", error.message);
+  }
+
+  /** Sauvegarde les calendriers sélectionnés dans le GoogleCalendarPicker */
+  async function handleSaveCalendars(calendars: GoogleCalendarItem[]) {
+    await fetch("/api/google-calendar/calendars", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ calendars }),
+    });
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     window.location.href = "/auth";
@@ -97,19 +136,14 @@ export default function ProfilPage() {
   async function handleDeleteAccount() {
     setDeleteLoading(true);
     try {
-      // Supprime les données utilisateur (cascade via ON DELETE CASCADE)
-      // Pour supprimer l'entrée auth.users, une Edge Function côté serveur est requise.
-      // En attendant : déconnexion + information.
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Appel RPC serveur si disponible (à créer en Edge Function)
         const { error } = await supabase.rpc("delete_user_account");
         if (error) throw error;
       }
       await supabase.auth.signOut();
       window.location.href = "/auth";
     } catch {
-      // Fallback : si la fonction RPC n'existe pas encore
       setDeleteLoading(false);
       setShowDeleteModal(false);
       alert("Pour supprimer définitivement ton compte, contacte-nous à support@mapyramide.com.");
@@ -132,6 +166,16 @@ export default function ProfilPage() {
       tapCount.current = 0;
       setShowDevTools(true);
     }
+  }
+
+  /** Toggle un jour dans la liste notifDailyDays */
+  function toggleDailyDay(day: number) {
+    const days = notifPrefs.notifDailyDays;
+    setNotifPrefs({
+      notifDailyDays: days.includes(day)
+        ? days.filter((d) => d !== day)
+        : [...days, day].sort(),
+    });
   }
 
   // ── Données ────────────────────────────────────────────────────────────────
@@ -192,7 +236,7 @@ export default function ProfilPage() {
           <SectionLabel label="Notifications" />
           <GroupCard>
             {!push.isSupported ? (
-              /* Navigateur non supporté ou PWA non installée */
+              /* Navigateur non supporté */
               <div className="flex items-start gap-3 px-5 py-4">
                 <span className="text-[18px] shrink-0 mt-0.5">🔔</span>
                 <div>
@@ -205,40 +249,135 @@ export default function ProfilPage() {
                 </div>
               </div>
             ) : (
-              /* Push supporté */
               <>
+                {/* Toggle principal push */}
                 <ToggleRow
                   label="Activer les notifications"
                   description={
                     push.permission === "denied"
                       ? "Bloqué — autorise dans Réglages > Safari"
                       : push.isSubscribed
-                      ? "Tu recevras un rappel quotidien à 8h"
-                      : "Rappel quotidien pour tes défis"
+                      ? "Notifications push actives"
+                      : "Active pour recevoir des rappels"
                   }
                   value={push.isSubscribed}
                   onToggle={push.isSubscribed ? push.unsubscribe : push.subscribe}
                 />
 
-                {/* Bouton test — visible uniquement si abonné */}
+                {/* Sous-options visibles uniquement si abonné */}
                 {push.isSubscribed && (
-                  <div
-                    className="px-5 py-3"
-                    style={{ borderTop: `1px solid ${colors.border}` }}
-                  >
-                    <button
-                      onClick={handleTestNotification}
-                      disabled={testLoading}
-                      className="text-[13px] transition-all active:opacity-60"
-                      style={{
-                        fontFamily: font.dm,
-                        fontWeight: 500,
-                        color: testSent ? colors.success : colors.primary,
-                      }}
-                    >
-                      {testSent ? "✓ Notification envoyée !" : testLoading ? "Envoi…" : "Envoyer une notification test"}
-                    </button>
-                  </div>
+                  <>
+                    {/* Notifications Défis */}
+                    <ToggleRow
+                      label="Notifications Défis"
+                      description="Encouragements et suggestions de nouveaux défis"
+                      value={notifPrefs.notifDefis}
+                      onToggle={() => setNotifPrefs({ notifDefis: !notifPrefs.notifDefis })}
+                      first={false}
+                    />
+
+                    {/* Notifications Calendrier */}
+                    <ToggleRow
+                      label="Notifications Calendrier"
+                      description="Rappels avant tes créneaux planifiés"
+                      value={notifPrefs.notifCalendar}
+                      onToggle={() => setNotifPrefs({ notifCalendar: !notifPrefs.notifCalendar })}
+                      first={false}
+                    />
+
+                    {/* Notification quotidienne */}
+                    <ToggleRow
+                      label="Notification quotidienne"
+                      description={
+                        notifPrefs.notifDaily
+                          ? `Chaque jour actif à ${notifPrefs.notifDailyTime}`
+                          : "Rappel quotidien pour rester en mouvement"
+                      }
+                      value={notifPrefs.notifDaily}
+                      onToggle={() => setNotifPrefs({ notifDaily: !notifPrefs.notifDaily })}
+                      first={false}
+                    />
+
+                    {/* Configurateur notification quotidienne */}
+                    {notifPrefs.notifDaily && (
+                      <div
+                        className="px-5 pb-4 flex flex-col gap-3"
+                        style={{ borderTop: `1px solid ${colors.border}` }}
+                      >
+                        {/* Heure */}
+                        <div className="flex items-center justify-between pt-3">
+                          <span
+                            className="text-[13px]"
+                            style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text2 }}
+                          >
+                            Heure
+                          </span>
+                          <input
+                            type="time"
+                            value={notifPrefs.notifDailyTime}
+                            onChange={(e) => setNotifPrefs({ notifDailyTime: e.target.value })}
+                            style={{
+                              padding:      "6px 10px",
+                              borderRadius: 10,
+                              fontSize:     14,
+                              fontFamily:   font.dm,
+                              color:        colors.text1,
+                              background:   colors.bg,
+                              border:       `1.5px solid ${colors.border}`,
+                              outline:      "none",
+                            }}
+                          />
+                        </div>
+
+                        {/* Jours */}
+                        <div className="flex flex-col gap-2">
+                          <span
+                            className="text-[13px]"
+                            style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text2 }}
+                          >
+                            Jours actifs
+                          </span>
+                          <div className="flex gap-1.5">
+                            {DAY_LABELS.map(({ label, value }) => {
+                              const active = notifPrefs.notifDailyDays.includes(value);
+                              return (
+                                <button
+                                  key={value}
+                                  onClick={() => toggleDailyDay(value)}
+                                  className="flex-1 py-2 rounded-xl text-[12px] transition-all"
+                                  style={{
+                                    background: active ? colors.primary : colors.bg,
+                                    border:     `1.5px solid ${active ? colors.primary : colors.border}`,
+                                    color:      active ? "#fff" : colors.text2,
+                                    fontFamily: font.dm,
+                                    fontWeight: active ? 700 : 400,
+                                  }}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bouton test */}
+                    <div className="px-5 py-3" style={{ borderTop: `1px solid ${colors.border}` }}>
+                      <button
+                        onClick={handleTestNotification}
+                        disabled={testLoading}
+                        className="text-[13px] transition-all active:opacity-60"
+                        style={{
+                          fontFamily: font.dm,
+                          fontWeight: 500,
+                          color: testSent ? colors.success : colors.primary,
+                        }}
+                      >
+                        {testSent ? "✓ Notification envoyée !" : testLoading ? "Envoi…" : "Envoyer une notification test"}
+                      </button>
+                    </div>
+                  </>
                 )}
               </>
             )}
@@ -266,27 +405,48 @@ export default function ProfilPage() {
                     </p>
                   </div>
                 </div>
-                {/* Bouton déconnexion Google */}
+
+                {/* Gérer les calendriers */}
+                <ActionRow
+                  icon="📋"
+                  label="Gérer les calendriers"
+                  description="Choisir quels calendriers afficher et leur couleur"
+                  onClick={() => setShowCalendarPicker(true)}
+                  first={false}
+                />
+
+                {/* Déconnexion */}
                 <ActionRow
                   icon="🔌"
                   label={googleLoading ? "Déconnexion…" : "Déconnecter Google Calendar"}
-                  description="Supprime la sync — tes créneaux MP restent intacts"
+                  description="Supprime la sync — tes créneaux MaPyramide restent intacts"
                   color={colors.danger}
                   onClick={handleGoogleDisconnect}
                   first={false}
                 />
               </div>
             ) : (
-              <div className="flex items-center gap-3 px-5 py-4">
-                <span className="text-[18px] shrink-0">🗓️</span>
-                <div className="flex-1">
-                  <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
-                    Google Calendar
-                  </p>
-                  <p className="text-[12px] mt-0.5" style={{ fontFamily: font.dm, color: colors.text3 }}>
-                    Non connecté — reconnecte-toi avec Google pour activer la sync
-                  </p>
+              <div>
+                <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: `1px solid ${colors.border}` }}>
+                  <span className="text-[18px] shrink-0">🗓️</span>
+                  <div className="flex-1">
+                    <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
+                      Google Calendar
+                    </p>
+                    <p className="text-[12px] mt-0.5" style={{ fontFamily: font.dm, color: colors.text3 }}>
+                      Non connecté — synchronise tes créneaux MaPyramide avec Google
+                    </p>
+                  </div>
                 </div>
+                {/* Bouton connexion */}
+                <ActionRow
+                  icon="🔗"
+                  label="Connecter Google Calendar"
+                  description="Lancer la synchronisation bidirectionnelle"
+                  color={colors.primary}
+                  onClick={handleGoogleConnect}
+                  first={false}
+                />
               </div>
             )}
           </GroupCard>
@@ -340,9 +500,9 @@ export default function ProfilPage() {
                   className="px-5 py-2 text-[12px]"
                   style={{
                     background: debugMode ? colors.successLight : colors.dangerLight,
-                    color: debugMode ? colors.success : colors.danger,
+                    color:      debugMode ? colors.success : colors.danger,
                     fontFamily: font.dm,
-                    borderTop: `1px solid ${colors.border}`,
+                    borderTop:  `1px solid ${colors.border}`,
                   }}
                 >
                   {debugMode
@@ -368,10 +528,7 @@ export default function ProfilPage() {
           className="mt-4 text-center w-full"
           style={{ background: "none", border: "none" }}
         >
-          <span
-            className="text-[11px]"
-            style={{ fontFamily: font.dm, color: colors.text3 }}
-          >
+          <span className="text-[11px]" style={{ fontFamily: font.dm, color: colors.text3 }}>
             MaPyramide v{APP_VERSION}
           </span>
         </button>
@@ -384,6 +541,14 @@ export default function ProfilPage() {
           onCancel={() => setShowDeleteModal(false)}
           onConfirm={handleDeleteAccount}
           loading={deleteLoading}
+        />
+      )}
+
+      {/* ── Bottom sheet sélection calendriers Google ── */}
+      {showCalendarPicker && (
+        <GoogleCalendarPicker
+          onClose={() => setShowCalendarPicker(false)}
+          onSave={handleSaveCalendars}
         />
       )}
     </>

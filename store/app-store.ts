@@ -2,6 +2,23 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Profile, Domain, UserDomainProgress, ChallengeCompletion } from "@/types";
 
+/** Préférences de notifications persistées localement */
+export interface NotifPrefs {
+  notifCalendar: boolean;    // Notifications rappels calendrier
+  notifDefis:    boolean;    // Notifications nouveaux défis / encouragements
+  notifDaily:    boolean;    // Notification quotidienne
+  notifDailyTime: string;    // Heure HH:MM (ex: "08:00")
+  notifDailyDays: number[];  // Jours actifs 1=Lun…7=Dim (vide = tous)
+}
+
+const DEFAULT_NOTIF_PREFS: NotifPrefs = {
+  notifCalendar:   true,
+  notifDefis:      true,
+  notifDaily:      false,
+  notifDailyTime:  "08:00",
+  notifDailyDays:  [1, 2, 3, 4, 5], // Lun-Ven par défaut
+};
+
 interface AppState {
   // Profil utilisateur
   profile: Profile | null;
@@ -23,6 +40,10 @@ interface AppState {
   // Google Calendar connecté (tokens présents en DB)
   isGoogleConnected: boolean;
   setGoogleConnected: (v: boolean) => void;
+
+  // Préférences notifications
+  notifPrefs: NotifPrefs;
+  setNotifPrefs: (prefs: Partial<NotifPrefs>) => void;
 
   // Reset (déconnexion)
   reset: () => void;
@@ -50,6 +71,12 @@ export const useAppStore = create<AppState>()(
       isGoogleConnected: false,
       setGoogleConnected: (v) => set({ isGoogleConnected: v }),
 
+      notifPrefs: DEFAULT_NOTIF_PREFS,
+      setNotifPrefs: (prefs) =>
+        set((state) => ({
+          notifPrefs: { ...state.notifPrefs, ...prefs },
+        })),
+
       reset: () =>
         set({
           profile: null,
@@ -63,8 +90,9 @@ export const useAppStore = create<AppState>()(
       // Profile exclu : rechargé depuis Supabase au montage + évite l'email en localStorage
       // Domaines exclus : données statiques rechargées depuis Supabase
       partialize: (state) => ({
-        progress: state.progress,
+        progress:    state.progress,
         completions: state.completions,
+        notifPrefs:  state.notifPrefs,
       }),
     }
   )

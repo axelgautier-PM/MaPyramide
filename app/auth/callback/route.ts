@@ -3,11 +3,13 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 // Route appelée par Supabase après clic sur le magic link ou après OAuth Google
 // Elle échange le token contre une session et écrit les cookies dans la réponse
+// Param optionnel ?next=/chemin pour rediriger vers une page spécifique après auth
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const token_hash = searchParams.get("token_hash");
-  const type = searchParams.get("type");
+  const code        = searchParams.get("code");
+  const token_hash  = searchParams.get("token_hash");
+  const type        = searchParams.get("type");
+  const next        = searchParams.get("next") ?? "/app"; // destination après auth
 
   // Valider le type OTP — liste blanche explicite
   const VALID_OTP_TYPES = ["email", "magiclink", "signup", "email_change", "recovery"] as const;
@@ -22,7 +24,7 @@ export async function GET(request: NextRequest) {
   if (token_hash && isValidType(type)) {
     const { error } = await supabase.auth.verifyOtp({ token_hash, type });
     if (!error) {
-      return NextResponse.redirect(`${origin}/app`);
+      return NextResponse.redirect(`${origin}${next}`);
     }
   }
 
@@ -49,7 +51,7 @@ export async function GET(request: NextRequest) {
         // Erreur ignorée volontairement : l'auth elle-même a réussi, la sync peut dégrader silencieusement
       }
 
-      return NextResponse.redirect(`${origin}/app`);
+      return NextResponse.redirect(`${origin}${next}`);
     }
   }
 

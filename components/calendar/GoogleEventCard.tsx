@@ -4,32 +4,32 @@ import type { GoogleCalendarEventOverlay } from "@/types/calendar";
 import { formatDuration } from "@/types/calendar";
 import { colors, font } from "@/lib/tokens";
 
-const GOOGLE_BLUE = "#4285F4";
-
 interface GoogleEventCardProps {
   event: GoogleCalendarEventOverlay;
 }
 
 /**
  * Carte d'un événement Google Calendar (lecture seule).
- * Bordure gauche bleue Google + badge "G" — non éditable.
+ * Bordure gauche colorée selon le calendrier source + badge "G".
  */
 export function GoogleEventCard({ event }: GoogleEventCardProps) {
+  const accentColor = event.calendar_color ?? "#4285F4";
+
   return (
     <div
       className="flex items-stretch rounded-xl overflow-hidden"
       style={{
         background: colors.surface,
-        border: `1.5px solid ${colors.border}`,
-        boxShadow: "0 1px 6px rgba(0,0,0,0.04)",
-        opacity: 0.9,
+        border:     `1.5px solid ${colors.border}`,
+        boxShadow:  "0 1px 6px rgba(0,0,0,0.04)",
+        opacity:    0.9,
       }}
       title="Événement Google Calendar — lecture seule"
     >
-      {/* Accent gauche Google blue */}
+      {/* Accent gauche couleur calendrier */}
       <div
         className="w-1 shrink-0 rounded-l-xl"
-        style={{ background: GOOGLE_BLUE }}
+        style={{ background: accentColor }}
       />
 
       {/* Contenu */}
@@ -46,17 +46,20 @@ export function GoogleEventCard({ event }: GoogleEventCardProps) {
             style={{ fontFamily: font.dm, color: colors.text3 }}
           >
             {event.start_time} · {formatDuration(event.duration_minutes)}
+            {event.google_calendar_name ? (
+              <span style={{ marginLeft: 4, color: accentColor }}>
+                · {event.google_calendar_name}
+              </span>
+            ) : null}
           </p>
         </div>
 
-        {/* Badge G */}
+        {/* Badge G coloré */}
         <div
           className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: GOOGLE_BLUE }}
+          style={{ background: accentColor }}
         >
-          <span
-            style={{ fontSize: 11, fontWeight: 700, color: "#fff", fontFamily: font.dm }}
-          >
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", fontFamily: font.dm }}>
             G
           </span>
         </div>

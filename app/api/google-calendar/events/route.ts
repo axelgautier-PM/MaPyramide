@@ -22,7 +22,7 @@ function toHHMM(dateTime: string): string {
 
 // Extrait la date locale YYYY-MM-DD depuis un dateTime ou date Google
 function toDateStr(dateTime: string | undefined, date: string | undefined): string {
-  if (date) return date; // événement "journée entière"
+  if (date) return date;
   if (!dateTime) return "";
   const d = new Date(dateTime);
   const y = d.getFullYear();
@@ -31,7 +31,9 @@ function toDateStr(dateTime: string | undefined, date: string | undefined): stri
   return `${y}-${m}-${day}`;
 }
 
-// GET /api/google-calendar/events?weekStart=YYYY-MM-DD
+/** GET /api/google-calendar/events?weekStart=YYYY-MM-DD
+ * Retourne les événements Google Calendar pour tous les calendriers sélectionnés,
+ * enrichis de la couleur et du nom de calendrier choisis par l'utilisateur. */
 export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
@@ -42,72 +44,95 @@ export async function GET(request: NextRequest) {
 
   // Calculer weekEnd (weekStart + 6 jours)
   const startDate = new Date(weekStart + "T00:00:00");
-  const endDate = new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000);
+  const endDate   = new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000);
   endDate.setHours(23, 59, 59, 999);
 
-  const origin = new URL(request.url).origin;
+  const origin       = new URL(request.url).origin;
   const cookieHeader = request.headers.get("cookie") ?? "";
-  const accessToken = await getAccessToken(origin, cookieHeader);
+  const accessToken  = await getAccessToken(origin, cookieHeader);
   if (!accessToken) return NextResponse.json({ error: "Token Google non disponible" }, { status: 401 });
 
-  // Récupérer les événements Google Calendar (calendrier principal)
-  const params = new URLSearchParams({
-    timeMin: startDate.toISOString(),
-    timeMax: endDate.toISOString(),
-    singleEvents: "true",
-    orderBy: "startTime",
-    maxResults: "250",
-  });
+  // Récupère les calendriers sélectionnés par l'utilisateur
+  const { data: savedCals } = await supabase
+    .from("google_calendars")
+    .select("google_calendar_id, name, color, is_selected")
+    .eq("user_id", user.id)
+    .eq("is_selected", true);
 
-  const res = await fetch(`${GOOGLE_API}/calendars/primary/events?${params}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  // Si aucun calendrier sauvegardé → utilise le calendrier principal par défaut
+  const calList: Array<{ id: string; name: string; color: string }> =
+    (savedCals ?? []).length > 0
+      ? (savedCals ?? []).map((c: { google_calendar_id: string; name: string; color: string }) => ({
+          id:    c.google_calendar_id,
+          name:  c.name,
+          color: c.color,
+        }))
+      : [{ id: "primary", name: "Principal", color: "#4285F4" }];
 
-  if (!res.ok) {
-    return NextResponse.json({ error: "Erreur Google Calendar (events)" }, { status: 502 });
-  }
-
-  const data = await res.json() as {
-    items?: Array<{
-      id: string;
-      summary?: string;
-      start?: { dateTime?: string; date?: string };
-      end?: { dateTime?: string; date?: string };
-    }>;
-  };
-
-  const googleItems = data.items ?? [];
-
-  // Récupérer les IDs Google déjà poussés depuis MP (pour les exclure de l'overlay)
+  // Récupère les IDs Google déjà poussés depuis MaPyramide (pour éviter doublons)
   const { data: syncMap } = await supabase
     .from("calendar_sync_map")
     .select("google_event_id")
     .eq("user_id", user.id);
 
-  const mpGoogleIds = new Set((syncMap ?? []).map((r: { google_event_id: string }) => r.google_event_id));
+  const mpGoogleIds = new Set(
+    (syncMap ?? []).map((r: { google_event_id: string }) => r.google_event_id)
+  );
 
-  // Construire l'overlay en excluant les événements MP et les journées entières sans heure
+  const params = new URLSearchParams({
+    timeMin:      startDate.toISOString(),
+    timeMax:      endDate.toISOString(),
+    singleEvents: "true",
+    orderBy:      "startTime",
+    maxResults:   "250",
+  });
+
   const overlays: GoogleCalendarEventOverlay[] = [];
 
-  for (const item of googleItems) {
-    if (mpGoogleIds.has(item.id)) continue; // déjà dans MP — évite les doublons
-    if (!item.start?.dateTime) continue;    // événements journée entière — pas de start_time
-
-    const startDt = item.start.dateTime;
-    const endDt = item.end?.dateTime;
-    const durationMinutes = endDt
-      ? Math.round((new Date(endDt).getTime() - new Date(startDt).getTime()) / 60000)
-      : 30;
-
-    overlays.push({
-      id: item.id,
-      title: item.summary ?? "(Sans titre)",
-      event_date: toDateStr(startDt, item.start.date),
-      start_time: toHHMM(startDt),
-      duration_minutes: durationMinutes,
-      is_google_overlay: true,
+  // Parcourt chaque calendrier sélectionné
+  for (const cal of calList) {
+    const calId = cal.id === "primary" ? "primary" : encodeURIComponent(cal.id);
+    const res   = await fetch(`${GOOGLE_API}/calendars/${calId}/events?${params}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
+
+    if (!res.ok) continue; // Calendrier inaccessible — on ignore silencieusement
+
+    const data = await res.json() as {
+      items?: Array<{
+        id: string;
+        summary?: string;
+        start?: { dateTime?: string; date?: string };
+        end?:   { dateTime?: string; date?: string };
+      }>;
+    };
+
+    for (const item of data.items ?? []) {
+      if (mpGoogleIds.has(item.id)) continue;  // déjà dans MaPyramide — évite les doublons
+      if (!item.start?.dateTime)    continue;  // journée entière sans heure
+
+      const startDt = item.start.dateTime;
+      const endDt   = item.end?.dateTime;
+      const durationMinutes = endDt
+        ? Math.round((new Date(endDt).getTime() - new Date(startDt).getTime()) / 60000)
+        : 30;
+
+      overlays.push({
+        id:                   item.id,
+        title:                item.summary ?? "(Sans titre)",
+        event_date:           toDateStr(startDt, item.start.date),
+        start_time:           toHHMM(startDt),
+        duration_minutes:     durationMinutes,
+        google_calendar_id:   cal.id,
+        google_calendar_name: cal.name,
+        calendar_color:       cal.color,
+        is_google_overlay:    true,
+      });
+    }
   }
+
+  // Tri par heure de début
+  overlays.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
   return NextResponse.json({ events: overlays });
 }
