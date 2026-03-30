@@ -268,9 +268,12 @@ Routes     :  /app           /app/defis  /app/calendrier  /app/profil
 010_calendar_sync_map.sql   ← table de sync MP ↔ Google Calendar
 011_push_subscriptions.sql  ← abonnements Web Push (VAPID)
 012_delete_user_rpc_update.sql ← mise à jour RPC : couvre tables 009-011
+013_calendar_reminder2.sql  ← 2ème rappel push sur les événements calendrier
+014_google_calendars.sql    ← table de sélection/couleur des calendriers Google
+015_calendar_reminder_sent.sql ← colonnes reminder_sent_at / reminder_2_sent_at (anti-doublon cron)
 ```
 
 ---
 
-*Dernière mise à jour : 2026-03-29*
+*Dernière mise à jour : 2026-03-30*
 *Projet : MaPyramide — Application de développement personnel*

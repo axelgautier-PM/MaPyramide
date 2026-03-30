@@ -70,7 +70,7 @@ export default function ProfilPage() {
     setTestLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      await fetch("/api/push/send", {
+      const res  = await fetch("/api/push/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -80,8 +80,20 @@ export default function ProfilPage() {
           url:    "/app",
         }),
       });
+      const json = await res.json() as { ok?: boolean; sent?: number; error?: string };
+      if (!res.ok || json.error) {
+        console.error("[test notif] erreur:", json.error ?? res.status);
+        alert(`Erreur notifications : ${json.error ?? "Vérifier les variables d'environnement Vercel"}`);
+        return;
+      }
+      if (json.sent === 0) {
+        alert("Notification envoyée mais aucun appareil abonné trouvé. Active les notifications puis réessaie.");
+        return;
+      }
       setTestSent(true);
       setTimeout(() => setTestSent(false), 3000);
+    } catch (err) {
+      console.error("[test notif]", err);
     } finally {
       setTestLoading(false);
     }

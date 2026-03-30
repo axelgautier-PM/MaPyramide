@@ -109,6 +109,16 @@ async function getAuthContext(req: NextRequest): Promise<
 // Si pas de userId → broadcast (cron uniquement)
 
 export async function POST(req: NextRequest) {
+  // Vérification des variables d'environnement critiques au démarrage
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error("[push/send] SUPABASE_SERVICE_ROLE_KEY manquant — impossible de lire push_subscriptions");
+    return NextResponse.json({ error: "Configuration serveur incomplète" }, { status: 500 });
+  }
+  if (!process.env.VAPID_PRIVATE_KEY || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_SUBJECT) {
+    console.error("[push/send] Variables VAPID manquantes (VAPID_PRIVATE_KEY / NEXT_PUBLIC_VAPID_PUBLIC_KEY / VAPID_SUBJECT)");
+    return NextResponse.json({ error: "Configuration VAPID incomplète" }, { status: 500 });
+  }
+
   const auth = await getAuthContext(req);
 
   if (auth.type === "unauthorized") {
@@ -154,6 +164,8 @@ export async function POST(req: NextRequest) {
     console.error("[push/send] fetch subscriptions:", error);
     return NextResponse.json({ error: "Erreur DB" }, { status: 500 });
   }
+
+  console.log(`[push/send] ${subscriptions?.length ?? 0} abonnement(s) trouvé(s) pour userId=${userId ?? "broadcast"}`);
 
   if (!subscriptions || subscriptions.length === 0) {
     return NextResponse.json({ ok: true, sent: 0 });
