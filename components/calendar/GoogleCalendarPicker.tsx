@@ -46,11 +46,18 @@ export function GoogleCalendarPicker({ onClose, onSave }: GoogleCalendarPickerPr
   // Charge la liste des calendriers Google de l'utilisateur
   useEffect(() => {
     fetch("/api/google-calendar/calendars")
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error ?? `Erreur ${res.status}`);
+        return json;
+      })
       .then((data: { calendars: GoogleCalendarItem[] }) => {
         setCalendars(data.calendars ?? []);
       })
-      .catch(() => setError("Impossible de charger les calendriers Google."))
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "Erreur inconnue";
+        setError(`Impossible de charger les calendriers Google : ${msg}`);
+      })
       .finally(() => setLoading(false));
   }, []);
 

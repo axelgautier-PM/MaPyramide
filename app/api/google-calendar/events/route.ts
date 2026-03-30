@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { getGoogleAccessToken } from "@/lib/google-token";
 import type { GoogleCalendarEventOverlay } from "@/types/calendar";
 
 const GOOGLE_API = "https://www.googleapis.com/calendar/v3";
-
-async function getAccessToken(origin: string, cookie: string): Promise<string | null> {
-  const res = await fetch(`${origin}/api/google-calendar/token`, {
-    method: "POST",
-    headers: { Cookie: cookie },
-  });
-  if (!res.ok) return null;
-  const { access_token } = await res.json() as { access_token: string };
-  return access_token ?? null;
-}
 
 // Convertit un datetime RFC3339 (ex: "2026-03-27T09:00:00+01:00") en HH:MM local
 function toHHMM(dateTime: string): string {
@@ -47,9 +38,7 @@ export async function GET(request: NextRequest) {
   const endDate   = new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000);
   endDate.setHours(23, 59, 59, 999);
 
-  const origin       = new URL(request.url).origin;
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  const accessToken  = await getAccessToken(origin, cookieHeader);
+  const accessToken = await getGoogleAccessToken(user.id);
   if (!accessToken) return NextResponse.json({ error: "Token Google non disponible" }, { status: 401 });
 
   // Récupère les calendriers sélectionnés par l'utilisateur

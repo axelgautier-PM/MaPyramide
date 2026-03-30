@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { getGoogleAccessToken } from "@/lib/google-token";
 
 const GOOGLE_API = "https://www.googleapis.com/calendar/v3";
-
-/** Obtient un access token valide */
-async function getAccessToken(origin: string, cookie: string): Promise<string | null> {
-  const res = await fetch(`${origin}/api/google-calendar/token`, {
-    method: "POST",
-    headers: { Cookie: cookie },
-  });
-  if (!res.ok) return null;
-  const { access_token } = await res.json() as { access_token: string };
-  return access_token ?? null;
-}
 
 /** GET /api/google-calendar/calendars
  * Retourne la liste des calendriers Google de l'utilisateur
@@ -22,10 +12,8 @@ export async function GET(request: NextRequest) {
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
   if (authErr || !user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
-  const origin      = new URL(request.url).origin;
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  const accessToken  = await getAccessToken(origin, cookieHeader);
-  if (!accessToken) return NextResponse.json({ error: "Token Google non disponible" }, { status: 401 });
+  const accessToken = await getGoogleAccessToken(user.id);
+  if (!accessToken) return NextResponse.json({ error: "Token Google non disponible — reconnecte Google Calendar dans ton profil" }, { status: 401 });
 
   // Récupère la liste des calendriers depuis Google
   const res = await fetch(`${GOOGLE_API}/users/me/calendarList`, {
@@ -75,7 +63,7 @@ export async function POST(request: NextRequest) {
 
   let body: { calendars: Array<{ id: string; name: string; color: string; is_selected: boolean }> };
   try {
-    body = await request.json();
+    body = await request.json() as typeof body;
   } catch {
     return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
   }

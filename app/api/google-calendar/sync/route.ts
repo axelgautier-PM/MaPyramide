@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { getGoogleAccessToken } from "@/lib/google-token";
 import type { CalendarEvent } from "@/types/calendar";
 
 const TIMEZONE = "Europe/Paris";
 const GOOGLE_API = "https://www.googleapis.com/calendar/v3";
-
-// Obtient un access token valide via la route /api/google-calendar/token (logique partagée)
-async function getAccessToken(origin: string, cookie: string): Promise<string | null> {
-  const res = await fetch(`${origin}/api/google-calendar/token`, {
-    method: "POST",
-    headers: { Cookie: cookie },
-  });
-  if (!res.ok) return null;
-  const { access_token } = await res.json() as { access_token: string };
-  return access_token ?? null;
-}
 
 // Convertit un CalendarEvent MP en payload Google Calendar API
 function toGoogleEvent(event: CalendarEvent) {
@@ -86,9 +76,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ skipped: true, reason: "recurring_not_supported" });
   }
 
-  const origin = new URL(request.url).origin;
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  const accessToken = await getAccessToken(origin, cookieHeader);
+  const accessToken = await getGoogleAccessToken(user.id);
   if (!accessToken) return NextResponse.json({ error: "Token Google non disponible" }, { status: 401 });
 
   const calendarId = await getOrCreateCalendar(accessToken, supabase, user.id);
