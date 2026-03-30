@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[push/test] QStash error:", err);
-    return NextResponse.json({ error: "Erreur QStash" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[push/test] QStash error:", message);
+    return NextResponse.json({ error: `Erreur QStash : ${message}` }, { status: 500 });
   }
 }

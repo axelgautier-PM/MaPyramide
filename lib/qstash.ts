@@ -6,10 +6,15 @@
 import { Client } from "@upstash/qstash";
 
 // Initialisation lazy — ne plante pas si la variable est absente (dev sans QStash)
+// Lit QSTASH_TOKEN (obligatoire) et QSTASH_URL (optionnel, endpoint régional Upstash)
 let _client: Client | null = null;
 export function getClient(): Client | null {
   if (!process.env.QSTASH_TOKEN) return null;
-  if (!_client) _client = new Client({ token: process.env.QSTASH_TOKEN });
+  if (!_client) {
+    const config: ConstructorParameters<typeof Client>[0] = { token: process.env.QSTASH_TOKEN };
+    if (process.env.QSTASH_URL) (config as Record<string, unknown>).baseUrl = process.env.QSTASH_URL;
+    _client = new Client(config);
+  }
   return _client;
 }
 
