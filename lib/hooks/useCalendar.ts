@@ -149,12 +149,18 @@ export function useCalendar(): UseCalendarReturn {
 
   const addEvent = useCallback(async (form: EventForm) => {
     if (!profile) return;
-    const { data: created, error: err } = await supabase
-      .from("calendar_events")
-      .insert({ user_id: profile.id, ...form })
-      .select()
-      .single();
-    if (err) throw err;
+
+    // Passe par l'API route pour que QStash planifie les rappels côté serveur
+    const res = await fetch("/api/calendar/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.error ?? "Erreur création");
+    }
+    const { event: created } = await res.json();
     await load();
 
     // Sync MP → Google (non récurrents uniquement)
@@ -169,13 +175,18 @@ export function useCalendar(): UseCalendarReturn {
   const updateEvent = useCallback(async (id: string, form: Partial<EventForm>) => {
     // Les IDs virtuels (récurrents expansés) contiennent un "-YYYY-MM-DD" — on extrait l'UUID de base
     const baseId = id.length > 36 ? id.slice(0, 36) : id;
-    const { data: updated, error: err } = await supabase
-      .from("calendar_events")
-      .update(form)
-      .eq("id", baseId)
-      .select()
-      .single();
-    if (err) throw err;
+
+    // Passe par l'API route pour que QStash replanifie les rappels côté serveur
+    const res = await fetch(`/api/calendar/events/${baseId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.error ?? "Erreur mise à jour");
+    }
+    const { event: updated } = await res.json();
     await load();
 
     // Sync MP → Google : chercher le google_event_id dans calendar_sync_map
@@ -210,11 +221,12 @@ export function useCalendar(): UseCalendarReturn {
       googleEventId = syncRow?.google_event_id ?? null;
     }
 
-    const { error: err } = await supabase
-      .from("calendar_events")
-      .delete()
-      .eq("id", baseId);
-    if (err) throw err;
+    // Passe par l'API route pour que QStash annule les rappels côté serveur
+    const res = await fetch(`/api/calendar/events/${baseId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.error ?? "Erreur suppression");
+    }
     await load();
 
     if (isGoogleConnected && googleEventId) {
