@@ -181,15 +181,18 @@ export async function POST(req: NextRequest) {
   const sent  = results.filter((r) => r.status === "fulfilled" && r.value.success).length;
   const failed = results.length - sent;
 
-  // Logger chaque échec pour diagnostic dans Vercel Functions
+  // Logger chaque échec pour diagnostic dans Vercel Functions + QStash dashboard
+  const errors: Array<{ endpoint: string; statusCode: number; body: string }> = [];
   results.forEach((result, i) => {
     if (result.status === "rejected") {
       const err = result.reason;
-      console.error(`[push/send] Échec envoi sub[${i}] endpoint=${subscriptions[i].endpoint?.slice(0, 60)}`, {
-        statusCode: err?.statusCode,
-        body:       err?.body,
-        message:    err?.message,
-      });
+      const entry = {
+        endpoint:   subscriptions[i].endpoint?.slice(0, 60) ?? "?",
+        statusCode: err?.statusCode ?? 0,
+        body:       String(err?.body ?? err?.message ?? "unknown"),
+      };
+      console.error("[push/send] Échec envoi:", entry);
+      errors.push(entry);
     }
   });
 
@@ -212,5 +215,5 @@ export async function POST(req: NextRequest) {
       .in("endpoint", expiredEndpoints);
   }
 
-  return NextResponse.json({ ok: true, sent, failed });
+  return NextResponse.json({ ok: true, sent, failed, ...(errors.length > 0 && { errors }) });
 }
