@@ -10,6 +10,22 @@ interface NavItem {
   matchPaths?: string[];
 }
 
+function ChecklistIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect x="3" y="3" width="16" height="16" rx="3"
+        fill={active ? "currentColor" : "none"} opacity={active ? 0.12 : 1}
+        stroke="currentColor" strokeWidth={active ? 2 : 1.5} />
+      <rect x="3" y="3" width="16" height="16" rx="3"
+        fill="none" stroke="currentColor" strokeWidth={active ? 2 : 1.5} />
+      <path d="M7 8l1.5 1.5L11 7" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 8h3" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} strokeLinecap="round" />
+      <path d="M7 13l1.5 1.5L11 12" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 13h3" stroke="currentColor" strokeWidth={active ? 1.8 : 1.5} strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function TargetIcon({ active }: { active: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -72,6 +88,12 @@ export function BottomNav() {
 
   const navItems: NavItem[] = [
     {
+      href: "/app/taches",
+      label: "Tâches",
+      icon: (active: boolean) => <ChecklistIcon active={active} />,
+      matchPaths: ["/app/taches"],
+    },
+    {
       href: "/app",
       label: "Objectifs",
       icon: (active: boolean) => <TargetIcon active={active} />,
@@ -117,7 +139,7 @@ export function BottomNav() {
               style={{ color: isActive ? "#6C63FF" : "#B0B0C8" }}
             >
               <div
-                className="px-4 py-1 rounded-xl transition-all"
+                className="px-2.5 py-1 rounded-xl transition-all"
                 style={{ background: isActive ? "#EEF0FF" : "transparent" }}
               >
                 {item.icon(isActive)}
