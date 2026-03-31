@@ -11,10 +11,10 @@ export function Header() {
 
   return (
     <header
-      className="sticky top-0 z-40 safe-top"
+      className="fixed top-0 left-0 right-0 z-40 safe-top"
       style={{ background: colors.surface, borderBottom: `1.5px solid ${colors.border}` }}
     >
-      <div className="app-shell px-4 h-14 flex items-center justify-between">
+      <div className="app-shell px-4 h-11 flex items-center justify-between">
 
         {/* Logo */}
         <Link href="/app" className="flex items-center gap-2.5">
@@ -33,9 +33,9 @@ export function Header() {
             <div
               className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px]"
               style={{
-                background: "#FFF3EB",
-                border:     "1px solid #FFD0AA",
-                color:      "#FF8C42",
+                background: colors.warningLight,
+                border:     `1px solid ${colors.warningBorder}`,
+                color:      colors.warning,
                 fontFamily: font.dm,
                 fontWeight: 700,
               }}

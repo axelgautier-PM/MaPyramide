@@ -15,6 +15,29 @@ export default function AuthPage() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
 
+  // ─── Connexion Google ─────────────────────────────────────────────────────
+
+  async function handleGoogleSignIn() {
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: "https://www.googleapis.com/auth/calendar",
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent", // force le consentement pour toujours obtenir un refresh_token
+        },
+      },
+    });
+    if (error) {
+      setError("Erreur lors de la connexion Google. Réessaie.");
+      setLoading(false);
+    }
+    // En cas de succès : le navigateur redirige vers Google, puis /auth/callback
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   function goToLogin(prefillEmail?: string) {
@@ -162,6 +185,38 @@ export default function AuthPage() {
                 Connexion
               </p>
 
+              {/* Bouton Google — CTA principal */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-[15px] transition-all active:scale-[0.98] mb-4"
+                style={{
+                  background: colors.surface,
+                  border: `1.5px solid ${colors.border}`,
+                  color: colors.text1,
+                  fontFamily: font.dm,
+                  fontWeight: 600,
+                  boxShadow: shadows.sm,
+                }}
+              >
+                {/* Logo Google SVG */}
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+                  <path d="M43.6 20.5H42V20H24v8h11.3C33.6 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.2 6.5 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z" fill="#FFC107"/>
+                  <path d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.2 6.5 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" fill="#FF3D00"/>
+                  <path d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 35.3 26.8 36 24 36c-5.3 0-9.6-3.1-11.3-7.5l-6.5 5C9.6 39.6 16.3 44 24 44z" fill="#4CAF50"/>
+                  <path d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.5l6.2 5.2C36.9 36.9 44 32 44 24c0-1.2-.1-2.3-.4-3.5z" fill="#1976D2"/>
+                </svg>
+                Continuer avec Google
+              </button>
+
+              {/* Séparateur */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px" style={{ background: colors.border }} />
+                <span className="text-[12px]" style={{ color: colors.text3, fontFamily: font.dm }}>ou</span>
+                <div className="flex-1 h-px" style={{ background: colors.border }} />
+              </div>
+
               <form onSubmit={handleLogin} className="flex flex-col gap-3">
                 <input
                   type="email"
@@ -205,18 +260,12 @@ export default function AuthPage() {
                 </Btn>
               </form>
 
-              {/* Séparateur */}
-              <div className="flex items-center gap-3 my-4">
-                <div className="flex-1 h-px" style={{ background: colors.border }} />
-                <span className="text-[12px]" style={{ color: colors.text3, fontFamily: font.dm }}>ou</span>
-                <div className="flex-1 h-px" style={{ background: colors.border }} />
-              </div>
-
               {/* Bouton secondaire Créer un compte */}
               <button
                 onClick={goToSignup}
                 className="w-full py-3.5 rounded-2xl text-[15px] transition-all active:scale-[0.98]"
                 style={{
+                  marginTop:  16,
                   background: colors.bg,
                   border:     `1.5px solid ${colors.border}`,
                   color:      colors.text1,
@@ -247,6 +296,37 @@ export default function AuthPage() {
               >
                 Créer un compte
               </p>
+
+              {/* Bouton Google — CTA principal */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-[15px] transition-all active:scale-[0.98] mb-4"
+                style={{
+                  background: colors.surface,
+                  border: `1.5px solid ${colors.border}`,
+                  color: colors.text1,
+                  fontFamily: font.dm,
+                  fontWeight: 600,
+                  boxShadow: shadows.sm,
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+                  <path d="M43.6 20.5H42V20H24v8h11.3C33.6 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.2 6.5 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z" fill="#FFC107"/>
+                  <path d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.2 6.5 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" fill="#FF3D00"/>
+                  <path d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 35.3 26.8 36 24 36c-5.3 0-9.6-3.1-11.3-7.5l-6.5 5C9.6 39.6 16.3 44 24 44z" fill="#4CAF50"/>
+                  <path d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.5l6.2 5.2C36.9 36.9 44 32 44 24c0-1.2-.1-2.3-.4-3.5z" fill="#1976D2"/>
+                </svg>
+                Continuer avec Google
+              </button>
+
+              {/* Séparateur */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px" style={{ background: colors.border }} />
+                <span className="text-[12px]" style={{ color: colors.text3, fontFamily: font.dm }}>ou</span>
+                <div className="flex-1 h-px" style={{ background: colors.border }} />
+              </div>
 
               <form onSubmit={handleSignup} className="flex flex-col gap-3">
                 <input

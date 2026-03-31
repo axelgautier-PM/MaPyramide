@@ -5,21 +5,28 @@ import { supabase } from "@/lib/supabase";
 import { useAppStore } from "@/store/app-store";
 import { useRouter } from "next/navigation";
 
-// Retourne la date locale au format YYYY-MM-DD
+// Retourne la date locale au format YYYY-MM-DD (sans conversion UTC)
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function todayStr() {
-  return new Date().toISOString().split("T")[0];
+  return toLocalDateStr(new Date());
 }
 
 // Retourne hier au format YYYY-MM-DD
 function yesterdayStr() {
   const d = new Date();
   d.setDate(d.getDate() - 1);
-  return d.toISOString().split("T")[0];
+  return toLocalDateStr(d);
 }
 
 // Composant client qui charge le profil au montage et écoute les changements d'auth
 export function AppInitializer({ children }: { children: React.ReactNode }) {
-  const { setProfile, reset } = useAppStore();
+  const { setProfile, reset, setGoogleConnected } = useAppStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -59,9 +66,24 @@ export function AppInitializer({ children }: { children: React.ReactNode }) {
       } else {
         setProfile(profile);
       }
+
+      // Vérifier si l'utilisateur a des tokens Google (connexion OAuth Google)
+      const { data: tokenRow } = await supabase
+        .from("google_oauth_tokens")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setGoogleConnected(!!tokenRow);
     }
 
     loadProfile();
+
+    // Enregistrer le service worker pour les push notifications
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Silencieux — SW non critique pour le fonctionnement de l'app
+      });
+    }
 
     // Écouter les changements de session (déconnexion, expiration)
     const {

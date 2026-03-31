@@ -15,7 +15,9 @@ export default function AppLayout({
         <ToastContainer />
         <Header />
         {/* Contenu centré — shell 720px — padding bas pour la bottom nav */}
-        <main className="flex-1 app-shell px-4 pb-[80px] pt-4">
+        {/* Espaceur compensant le header fixed (44px + safe-area-inset-top) */}
+        <div className="safe-top shrink-0" style={{ height: 44 }} aria-hidden />
+        <main className="flex-1 app-shell px-4 pb-[80px] pt-3">
           {children}
         </main>
         <BottomNav />

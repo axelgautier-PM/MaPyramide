@@ -46,7 +46,7 @@ export const DOMAIN_METRICS: Record<string, MetricConfig[]> = {
     { key: "taux_horaire",   label: "Taux horaire perso",   unit: "€/h",    icon: "⏳", goal: null,direction: "up" },
   ],
 
-  "bien-etre": [
+  bienetre: [
     { key: "bienetre_global", label: "Bien-être global",      unit: "/10",  icon: "🌟", goal: 8,   direction: "up"   },
     { key: "stress_perso",    label: "Niveau de stress",      unit: "/10",  icon: "🌡️", goal: 2,   direction: "down" },
     { key: "pratiques",       label: "Pratiques bien-être",   unit: "/sem", icon: "🧘", goal: 5,   direction: "up"   },

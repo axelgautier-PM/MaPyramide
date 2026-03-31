@@ -1,4 +1,4 @@
-/** Types pour le module Calendrier — MaPyramide V2 */
+/** Types pour le module Calendrier — MaPyramide */
 
 export interface CalendarEvent {
   id: string;
@@ -21,6 +21,10 @@ export interface CalendarEvent {
   has_reminder: boolean;
   reminder_minutes_before: number;
 
+  // Seconde notification (optionnelle, visible si has_reminder = true)
+  has_reminder_2: boolean;
+  reminder_minutes_before_2: number;
+
   created_at: string;
 }
 
@@ -39,6 +43,8 @@ export interface EventForm {
   recurrence_end_date: string | null;
   has_reminder: boolean;
   reminder_minutes_before: number;
+  has_reminder_2: boolean;
+  reminder_minutes_before_2: number;
 }
 
 /** Retourne la date locale au format YYYY-MM-DD (sans décalage UTC) */
@@ -66,8 +72,23 @@ export function emptyForm(defaults?: Partial<EventForm>): EventForm {
     recurrence_end_date: null,
     has_reminder: false,
     reminder_minutes_before: 15,
+    has_reminder_2: false,
+    reminder_minutes_before_2: 30,
     ...defaults,
   };
+}
+
+/** Événement Google Calendar affiché en lecture seule dans la vue semaine */
+export interface GoogleCalendarEventOverlay {
+  id: string;
+  title: string;
+  event_date: string;           // YYYY-MM-DD
+  start_time: string;           // HH:MM
+  duration_minutes: number;
+  google_calendar_id: string;   // ID du calendrier source
+  google_calendar_name: string; // Nom affiché (ex: "Personnel", "Travail")
+  calendar_color: string;       // Couleur choisie par l'utilisateur
+  is_google_overlay: true;      // discriminant — jamais éditable
 }
 
 /** Groupe horaire pour l'affichage */

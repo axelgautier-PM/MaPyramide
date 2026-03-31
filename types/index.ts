@@ -90,20 +90,3 @@ export interface Profile {
   created_at: string;
 }
 
-// Métrique Santé avec ses paramètres d'affichage
-export interface MetricConfig {
-  key: string;
-  label: string;
-  unit: string;
-  icon: string;
-  goal: number;
-  direction: "up" | "down"; // up = plus = mieux
-}
-
-export const METRICS_CONFIG: MetricConfig[] = [
-  { key: "pas",     label: "Pas / jour",             unit: "pas",     icon: "👟", goal: 8000, direction: "up"   },
-  { key: "seances", label: "Séances sport",           unit: "/sem",    icon: "🏋️", goal: 3,    direction: "up"   },
-  { key: "repas",   label: "Repas équilibrés",        unit: "/sem",    icon: "🥗", goal: 10,   direction: "up"   },
-  { key: "hydra",   label: "Hydratation",             unit: "L/j",     icon: "💧", goal: 1.5,  direction: "up"   },
-  { key: "masse",   label: "Masse grasse",            unit: "%",       icon: "⚖️", goal: 15,   direction: "down" },
-];

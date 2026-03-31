@@ -3,264 +3,52 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAppStore } from "@/store/app-store";
-import { colors, font, radii, shadows } from "@/lib/tokens";
+import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
+import { colors, font, shadows } from "@/lib/tokens";
+import { ToggleRow, ActionRow, SectionLabel, GroupCard } from "@/components/profil/ProfilUI";
+import { DeleteModal } from "@/components/profil/DeleteModal";
+import { GoogleDisconnectModal } from "@/components/profil/GoogleDisconnectModal";
+import { GoogleCalendarPicker } from "@/components/calendar/GoogleCalendarPicker";
+import type { GoogleCalendarItem } from "@/components/calendar/GoogleCalendarPicker";
 
 // ─── Version de l'application ────────────────────────────────────────────────
-const APP_VERSION = "0.1.0";
+const APP_VERSION = "0.2.0";
 
-// ─── Composant ToggleRow ──────────────────────────────────────────────────────
-
-interface ToggleRowProps {
-  label: string;
-  description: string;
-  value: boolean;
-  onToggle: () => void;
-  first?: boolean;
-}
-
-function ToggleRow({ label, description, value, onToggle, first = true }: ToggleRowProps) {
-  return (
-    <div
-      className="flex items-center justify-between px-5 py-4"
-      style={{ borderTop: first ? "none" : `1px solid ${colors.border}` }}
-    >
-      <div className="flex-1 pr-4">
-        <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
-          {label}
-        </p>
-        <p className="text-[12px] mt-0.5" style={{ fontFamily: font.dm, color: colors.text2 }}>
-          {description}
-        </p>
-      </div>
-      <button
-        onClick={onToggle}
-        className="w-12 h-7 rounded-full transition-all relative shrink-0"
-        style={{ background: value ? colors.primary : colors.border }}
-        role="switch"
-        aria-checked={value}
-      >
-        <span
-          className="absolute top-[3px] w-[22px] h-[22px] rounded-full bg-white shadow-sm transition-all"
-          style={{ left: value ? "calc(100% - 25px)" : 3 }}
-        />
-      </button>
-    </div>
-  );
-}
-
-// ─── Composant ActionRow ──────────────────────────────────────────────────────
-
-interface ActionRowProps {
-  icon: string;
-  label: string;
-  description?: string;
-  color?: string;
-  onClick: () => void;
-  first?: boolean;
-}
-
-function ActionRow({ icon, label, description, color, onClick, first = true }: ActionRowProps) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-3 px-5 py-4 transition-all active:opacity-60 text-left"
-      style={{ borderTop: first ? "none" : `1px solid ${colors.border}` }}
-    >
-      <span className="text-[18px] shrink-0">{icon}</span>
-      <div className="flex-1 min-w-0">
-        <p
-          className="text-[15px]"
-          style={{
-            fontFamily: font.dm,
-            fontWeight: 500,
-            color: color ?? colors.text1,
-          }}
-        >
-          {label}
-        </p>
-        {description && (
-          <p className="text-[12px] mt-0.5" style={{ fontFamily: font.dm, color: colors.text3 }}>
-            {description}
-          </p>
-        )}
-      </div>
-    </button>
-  );
-}
-
-// ─── Composant SectionLabel ───────────────────────────────────────────────────
-
-function SectionLabel({ label, color }: { label: string; color?: string }) {
-  return (
-    <p
-      className="text-[11px] uppercase tracking-widest px-1"
-      style={{ fontFamily: font.dm, fontWeight: 600, color: color ?? colors.text3 }}
-    >
-      {label}
-    </p>
-  );
-}
-
-// ─── Composant GroupCard ──────────────────────────────────────────────────────
-
-function GroupCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{
-        background: colors.surface,
-        border: `1.5px solid ${colors.border}`,
-        boxShadow: shadows.sm,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-// ─── Modale suppression de compte ────────────────────────────────────────────
-
-interface DeleteModalProps {
-  onCancel: () => void;
-  onConfirm: () => void;
-  loading: boolean;
-}
-
-function DeleteModal({ onCancel, onConfirm, loading }: DeleteModalProps) {
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  function startCountdown() {
-    setCountdown(3);
-  }
-
-  useEffect(() => {
-    if (countdown === null) return;
-    if (countdown === 0) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
-    timerRef.current = setInterval(() => {
-      setCountdown((c) => (c !== null ? c - 1 : null));
-    }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [countdown]);
-
-  const canConfirm = countdown === 0;
-
-  return (
-    /* Fond semi-transparent */
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: "rgba(0,0,0,0.45)" }}
-      onClick={onCancel}
-    >
-      {/* Bottom sheet */}
-      <div
-        className="w-full max-w-sm mx-auto rounded-t-3xl p-6 flex flex-col gap-4"
-        style={{ background: colors.surface }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Poignée */}
-        <div
-          className="w-10 h-1 rounded-full mx-auto -mt-1"
-          style={{ background: colors.border }}
-        />
-
-        {/* Icône + titre */}
-        <div className="flex flex-col items-center gap-3 pt-1">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center text-[28px]"
-            style={{ background: colors.dangerLight }}
-          >
-            🗑️
-          </div>
-          <p
-            className="text-[20px] text-center"
-            style={{ fontFamily: font.dm, fontWeight: 800, color: colors.text1, letterSpacing: "-0.4px" }}
-          >
-            Supprimer mon compte ?
-          </p>
-          <p
-            className="text-[14px] text-center leading-relaxed"
-            style={{ fontFamily: font.dm, color: colors.text2 }}
-          >
-            Cette action est <strong>irréversible</strong>. Toute ta progression, tes défis et ton streak seront définitivement supprimés.
-          </p>
-        </div>
-
-        {/* Boutons */}
-        <div className="flex flex-col gap-2.5 pt-2 pb-2">
-          {/* Bouton danger — 2 étapes */}
-          {countdown === null ? (
-            <button
-              onClick={startCountdown}
-              className="w-full py-4 rounded-2xl text-[15px] transition-all active:scale-[0.98]"
-              style={{
-                background: colors.danger,
-                color: "#fff",
-                fontFamily: font.dm,
-                fontWeight: 700,
-              }}
-            >
-              Supprimer définitivement
-            </button>
-          ) : (
-            <button
-              onClick={canConfirm ? onConfirm : undefined}
-              disabled={!canConfirm || loading}
-              className="w-full py-4 rounded-2xl text-[15px] transition-all"
-              style={{
-                background: canConfirm ? colors.danger : colors.border,
-                color: canConfirm ? "#fff" : colors.text3,
-                fontFamily: font.dm,
-                fontWeight: 700,
-                cursor: canConfirm ? "pointer" : "not-allowed",
-              }}
-            >
-              {loading
-                ? "Suppression…"
-                : canConfirm
-                ? "Confirmer la suppression"
-                : `Confirmer (${countdown}…)`}
-            </button>
-          )}
-
-          {/* Annuler */}
-          <button
-            onClick={onCancel}
-            className="w-full py-4 rounded-2xl text-[15px] transition-all active:opacity-70"
-            style={{
-              background: colors.bg,
-              border: `1.5px solid ${colors.border}`,
-              color: colors.text2,
-              fontFamily: font.dm,
-              fontWeight: 500,
-            }}
-          >
-            Annuler
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+const DAY_LABELS = [
+  { label: "L",  value: 1 },
+  { label: "M",  value: 2 },
+  { label: "Me", value: 3 },
+  { label: "J",  value: 4 },
+  { label: "V",  value: 5 },
+  { label: "S",  value: 6 },
+  { label: "D",  value: 7 },
+];
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function ProfilPage() {
-  const { profile } = useAppStore();
+  const { profile, isGoogleConnected, setGoogleConnected, notifPrefs, setNotifPrefs } = useAppStore();
+
+  // Push notifications
+  const push = usePushNotifications();
+  const [testSent,    setTestSent]    = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
 
   // Debug mode
-  const [debugMode, setDebugMode]   = useState(false);
+  const [debugMode,    setDebugMode]    = useState(false);
   const [showDevTools, setShowDevTools] = useState(false);
-  const [debugSaved, setDebugSaved] = useState(false);
+  const [debugSaved,   setDebugSaved]   = useState(false);
+
+  // Google Calendar
+  const [googleLoading,       setGoogleLoading]       = useState(false);
+  const [showCalendarPicker,  setShowCalendarPicker]  = useState(false);
+
+  // Déconnexion Google Calendar
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
 
   // Suppression de compte
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteLoading, setDeleteLoading]     = useState(false);
+  const [deleteLoading,   setDeleteLoading]   = useState(false);
 
   // Compteur secret (5 taps sur le footer pour ouvrir dev tools)
   const tapCount = useRef(0);
@@ -282,6 +70,70 @@ export default function ProfilPage() {
     setTimeout(() => setDebugSaved(false), 2000);
   }
 
+  async function handleTestNotification() {
+    setTestLoading(true);
+    try {
+      // Passe par QStash (délai 5s) pour valider toute la chaîne de notifications
+      const res  = await fetch("/api/push/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const json = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok || json.error) {
+        console.error("[test notif] erreur:", json.error ?? res.status);
+        alert(`Erreur notifications : ${json.error ?? "Vérifier les variables d'environnement Vercel"}`);
+        return;
+      }
+      setTestSent(true);
+      setTimeout(() => setTestSent(false), 5000);
+    } catch (err) {
+      console.error("[test notif]", err);
+    } finally {
+      setTestLoading(false);
+    }
+  }
+
+  /** Déconnexion Google Calendar — supprime les tokens mais pas les événements MP */
+  async function handleGoogleDisconnect() {
+    setGoogleLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("google_oauth_tokens").delete().eq("user_id", user.id);
+      }
+      setGoogleConnected(false);
+    } catch {
+      // Silencieux
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  /** Reconnexion Google Calendar — relance le flux OAuth avec le scope Calendar */
+  async function handleGoogleConnect() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/app/profil`,
+        scopes: "https://www.googleapis.com/auth/calendar",
+        queryParams: {
+          access_type: "offline",
+          prompt:      "consent",
+        },
+      },
+    });
+    if (error) console.error("[Profil] Google connect error:", error.message);
+  }
+
+  /** Sauvegarde les calendriers sélectionnés dans le GoogleCalendarPicker */
+  async function handleSaveCalendars(calendars: GoogleCalendarItem[]) {
+    await fetch("/api/google-calendar/calendars", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ calendars }),
+    });
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     window.location.href = "/auth";
@@ -290,19 +142,14 @@ export default function ProfilPage() {
   async function handleDeleteAccount() {
     setDeleteLoading(true);
     try {
-      // Supprime les données utilisateur (cascade via ON DELETE CASCADE)
-      // Pour supprimer l'entrée auth.users, une Edge Function côté serveur est requise.
-      // En attendant : déconnexion + information.
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Appel RPC serveur si disponible (à créer en Edge Function)
         const { error } = await supabase.rpc("delete_user_account");
         if (error) throw error;
       }
       await supabase.auth.signOut();
       window.location.href = "/auth";
     } catch {
-      // Fallback : si la fonction RPC n'existe pas encore
       setDeleteLoading(false);
       setShowDeleteModal(false);
       alert("Pour supprimer définitivement ton compte, contacte-nous à support@mapyramide.com.");
@@ -325,6 +172,16 @@ export default function ProfilPage() {
       tapCount.current = 0;
       setShowDevTools(true);
     }
+  }
+
+  /** Toggle un jour dans la liste notifDailyDays */
+  function toggleDailyDay(day: number) {
+    const days = notifPrefs.notifDailyDays;
+    setNotifPrefs({
+      notifDailyDays: days.includes(day)
+        ? days.filter((d) => d !== day)
+        : [...days, day].sort(),
+    });
   }
 
   // ── Données ────────────────────────────────────────────────────────────────
@@ -380,6 +237,212 @@ export default function ProfilPage() {
           </div>
         </div>
 
+        {/* ── Section Notifications ── */}
+        <div className="flex flex-col gap-2">
+          <SectionLabel label="Notifications" />
+          <GroupCard>
+            {!push.isSupported ? (
+              /* Navigateur non supporté */
+              <div className="flex items-start gap-3 px-5 py-4">
+                <span className="text-[18px] shrink-0 mt-0.5">🔔</span>
+                <div>
+                  <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
+                    Notifications push
+                  </p>
+                  <p className="text-[12px] mt-1 leading-relaxed" style={{ fontFamily: font.dm, color: colors.text2 }}>
+                    Pour recevoir des notifications, installe l&apos;app sur ton écran d&apos;accueil via Safari → &quot;Sur l&apos;écran d&apos;accueil&quot; (iOS 16.4+).
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Toggle principal push */}
+                <ToggleRow
+                  label="Activer les notifications"
+                  description={
+                    push.permission === "denied"
+                      ? "Bloqué — autorise dans Réglages > Safari"
+                      : push.isSubscribed
+                      ? "Notifications push actives"
+                      : "Active pour recevoir des rappels"
+                  }
+                  value={push.isSubscribed}
+                  onToggle={push.isSubscribed ? push.unsubscribe : push.subscribe}
+                />
+
+                {/* Sous-options visibles uniquement si abonné */}
+                {push.isSubscribed && (
+                  <>
+                    {/* Notifications Défis */}
+                    <ToggleRow
+                      label="Notifications Défis"
+                      description="Encouragements et suggestions de nouveaux défis"
+                      value={notifPrefs.notifDefis}
+                      onToggle={() => setNotifPrefs({ notifDefis: !notifPrefs.notifDefis })}
+                      first={false}
+                    />
+
+                    {/* Notifications Calendrier */}
+                    <ToggleRow
+                      label="Notifications Calendrier"
+                      description="Rappels avant tes créneaux planifiés"
+                      value={notifPrefs.notifCalendar}
+                      onToggle={() => setNotifPrefs({ notifCalendar: !notifPrefs.notifCalendar })}
+                      first={false}
+                    />
+
+                    {/* Notification quotidienne */}
+                    <ToggleRow
+                      label="Notification quotidienne"
+                      description={
+                        notifPrefs.notifDaily
+                          ? `Chaque jour actif à ${notifPrefs.notifDailyTime}`
+                          : "Rappel quotidien pour rester en mouvement"
+                      }
+                      value={notifPrefs.notifDaily}
+                      onToggle={() => setNotifPrefs({ notifDaily: !notifPrefs.notifDaily })}
+                      first={false}
+                    />
+
+                    {/* Configurateur notification quotidienne */}
+                    {notifPrefs.notifDaily && (
+                      <div
+                        className="px-5 pb-4 flex flex-col gap-3"
+                        style={{ borderTop: `1px solid ${colors.border}` }}
+                      >
+                        {/* Heure */}
+                        <div className="flex items-center justify-between pt-3">
+                          <span
+                            className="text-[13px]"
+                            style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text2 }}
+                          >
+                            Heure
+                          </span>
+                          <input
+                            type="time"
+                            value={notifPrefs.notifDailyTime}
+                            onChange={(e) => setNotifPrefs({ notifDailyTime: e.target.value })}
+                            style={{
+                              padding:      "6px 10px",
+                              borderRadius: 10,
+                              fontSize:     14,
+                              fontFamily:   font.dm,
+                              color:        colors.text1,
+                              background:   colors.bg,
+                              border:       `1.5px solid ${colors.border}`,
+                              outline:      "none",
+                            }}
+                          />
+                        </div>
+
+                        {/* Jours */}
+                        <div className="flex flex-col gap-2">
+                          <span
+                            className="text-[13px]"
+                            style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text2 }}
+                          >
+                            Jours actifs
+                          </span>
+                          <div className="flex gap-1.5">
+                            {DAY_LABELS.map(({ label, value }) => {
+                              const active = notifPrefs.notifDailyDays.includes(value);
+                              return (
+                                <button
+                                  key={value}
+                                  onClick={() => toggleDailyDay(value)}
+                                  className="flex-1 py-2 rounded-xl text-[12px] transition-all"
+                                  style={{
+                                    background: active ? colors.primary : colors.bg,
+                                    border:     `1.5px solid ${active ? colors.primary : colors.border}`,
+                                    color:      active ? "#fff" : colors.text2,
+                                    fontFamily: font.dm,
+                                    fontWeight: active ? 700 : 400,
+                                  }}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                  </>
+                )}
+              </>
+            )}
+          </GroupCard>
+        </div>
+
+        {/* ── Section Google Calendar ── */}
+        <div className="flex flex-col gap-2">
+          <SectionLabel label="Google Calendar" />
+          <GroupCard>
+            {isGoogleConnected ? (
+              <div>
+                {/* Statut connecté */}
+                <div
+                  className="flex items-center gap-3 px-5 py-4"
+                  style={{ borderBottom: `1px solid ${colors.border}` }}
+                >
+                  <span className="text-[18px] shrink-0">🗓️</span>
+                  <div className="flex-1">
+                    <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
+                      Google Calendar connecté
+                    </p>
+                    <p className="text-[12px] mt-0.5" style={{ fontFamily: font.dm, color: colors.success }}>
+                      ✓ Sync bidirectionnelle active
+                    </p>
+                  </div>
+                </div>
+
+                {/* Gérer les calendriers */}
+                <ActionRow
+                  icon="📋"
+                  label="Gérer les calendriers"
+                  description="Choisir quels calendriers afficher et leur couleur"
+                  onClick={() => setShowCalendarPicker(true)}
+                  first={false}
+                />
+
+                {/* Déconnexion — ouvre la modale de confirmation */}
+                <ActionRow
+                  icon="🔌"
+                  label="Déconnecter Google Calendar"
+                  description="Supprime la sync — tes créneaux MaPyramide restent intacts"
+                  color={colors.danger}
+                  onClick={() => setShowDisconnectModal(true)}
+                  first={false}
+                />
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: `1px solid ${colors.border}` }}>
+                  <span className="text-[18px] shrink-0">🗓️</span>
+                  <div className="flex-1">
+                    <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
+                      Google Calendar
+                    </p>
+                    <p className="text-[12px] mt-0.5" style={{ fontFamily: font.dm, color: colors.text3 }}>
+                      Non connecté — synchronise tes créneaux MaPyramide avec Google
+                    </p>
+                  </div>
+                </div>
+                {/* Bouton connexion */}
+                <ActionRow
+                  icon="🔗"
+                  label="Connecter Google Calendar"
+                  description="Lancer la synchronisation bidirectionnelle"
+                  color={colors.primary}
+                  onClick={handleGoogleConnect}
+                  first={false}
+                />
+              </div>
+            )}
+          </GroupCard>
+        </div>
+
         {/* ── Section Compte ── */}
         <div className="flex flex-col gap-2">
           <SectionLabel label="Compte" />
@@ -428,9 +491,9 @@ export default function ProfilPage() {
                   className="px-5 py-2 text-[12px]"
                   style={{
                     background: debugMode ? colors.successLight : colors.dangerLight,
-                    color: debugMode ? colors.success : colors.danger,
+                    color:      debugMode ? colors.success : colors.danger,
                     fontFamily: font.dm,
-                    borderTop: `1px solid ${colors.border}`,
+                    borderTop:  `1px solid ${colors.border}`,
                   }}
                 >
                   {debugMode
@@ -446,6 +509,22 @@ export default function ProfilPage() {
                 onClick={handleReinitOnboarding}
                 first={false}
               />
+
+              {/* Bouton test notification (déplacé depuis la section Notifications) */}
+              <div className="px-5 py-3" style={{ borderTop: `1px solid ${colors.border}` }}>
+                <button
+                  onClick={handleTestNotification}
+                  disabled={testLoading}
+                  className="text-[13px] transition-all active:opacity-60"
+                  style={{
+                    fontFamily: font.dm,
+                    fontWeight: 500,
+                    color: testSent ? colors.success : colors.primary,
+                  }}
+                >
+                  {testSent ? "✓ Arrivée dans 5s…" : testLoading ? "Planification…" : "🔔 Envoyer une notification test"}
+                </button>
+              </div>
             </GroupCard>
           </div>
         )}
@@ -456,15 +535,21 @@ export default function ProfilPage() {
           className="mt-4 text-center w-full"
           style={{ background: "none", border: "none" }}
         >
-          <span
-            className="text-[11px]"
-            style={{ fontFamily: font.dm, color: colors.text3 }}
-          >
+          <span className="text-[11px]" style={{ fontFamily: font.dm, color: colors.text3 }}>
             MaPyramide v{APP_VERSION}
           </span>
         </button>
 
       </div>
+
+      {/* ── Modale déconnexion Google Calendar ── */}
+      {showDisconnectModal && (
+        <GoogleDisconnectModal
+          onCancel={() => setShowDisconnectModal(false)}
+          onConfirm={async () => { await handleGoogleDisconnect(); setShowDisconnectModal(false); }}
+          loading={googleLoading}
+        />
+      )}
 
       {/* ── Modale suppression de compte ── */}
       {showDeleteModal && (
@@ -472,6 +557,14 @@ export default function ProfilPage() {
           onCancel={() => setShowDeleteModal(false)}
           onConfirm={handleDeleteAccount}
           loading={deleteLoading}
+        />
+      )}
+
+      {/* ── Bottom sheet sélection calendriers Google ── */}
+      {showCalendarPicker && (
+        <GoogleCalendarPicker
+          onClose={() => setShowCalendarPicker(false)}
+          onSave={handleSaveCalendars}
         />
       )}
     </>
