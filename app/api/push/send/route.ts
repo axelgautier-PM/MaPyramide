@@ -181,6 +181,18 @@ export async function POST(req: NextRequest) {
   const sent  = results.filter((r) => r.status === "fulfilled" && r.value.success).length;
   const failed = results.length - sent;
 
+  // Logger chaque échec pour diagnostic dans Vercel Functions
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const err = result.reason;
+      console.error(`[push/send] Échec envoi sub[${i}] endpoint=${subscriptions[i].endpoint?.slice(0, 60)}`, {
+        statusCode: err?.statusCode,
+        body:       err?.body,
+        message:    err?.message,
+      });
+    }
+  });
+
   // Nettoyer les abonnements expirés (410 Gone = appareil désinscrit)
   const expiredEndpoints: string[] = [];
   results.forEach((result, i) => {
