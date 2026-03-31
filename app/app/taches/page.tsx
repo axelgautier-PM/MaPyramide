@@ -13,6 +13,7 @@ import { useCalendar } from "@/lib/hooks/useCalendar";
 import type { TodoItem } from "@/types/todo";
 import type { EventForm } from "@/types/calendar";
 import { emptyForm } from "@/types/calendar";
+import { DebugZone } from "@/components/ui/DebugZone";
 
 // ─── Page Tâches ──────────────────────────────────────────────────────────────
 
@@ -268,6 +269,7 @@ export default function TachesPage() {
             )}
           </div>
         )}
+        <DebugZone pageId="taches" />
       </div>
 
       {/* ── Sheet détail tâche ── */}

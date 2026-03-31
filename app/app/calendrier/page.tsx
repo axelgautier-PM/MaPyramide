@@ -15,6 +15,7 @@ import type { GoogleCalendarItem } from "@/components/calendar/GoogleCalendarPic
 import { colors, font } from "@/lib/tokens";
 import type { CalendarEvent, EventForm, GoogleCalendarEventOverlay } from "@/types/calendar";
 import { emptyForm } from "@/types/calendar";
+import { DebugZone } from "@/components/ui/DebugZone";
 
 export default function CalendrierPage() {
   const { domains, isGoogleConnected } = useAppStore();
@@ -329,6 +330,7 @@ export default function CalendrierPage() {
         />
       )}
 
+      <DebugZone pageId="calendrier" />
     </div>
   );
 }

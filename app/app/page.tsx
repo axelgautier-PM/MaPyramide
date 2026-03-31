@@ -8,6 +8,7 @@ import { getMetricsForDomain } from "@/lib/metrics-config";
 import { MetricCard } from "@/components/objectifs/MetricCard";
 import { useAppStore } from "@/store/app-store";
 import { colors, font } from "@/lib/tokens";
+import { DebugZone } from "@/components/ui/DebugZone";
 
 // Composant interne pour accéder aux searchParams
 function ObjectifsContent() {
@@ -222,6 +223,7 @@ function ObjectifsContent() {
         </div>
       )}
 
+      <DebugZone pageId="objectifs" />
     </div>
   );
 }

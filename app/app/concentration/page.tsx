@@ -4,6 +4,56 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { colors, font } from "@/lib/tokens";
 import { InteractiveDial } from "@/components/concentration/TimerDial";
 import { FocusOverlay } from "@/components/concentration/FocusOverlay";
+import { DebugZone } from "@/components/ui/DebugZone";
+
+// ─── Alarme de fin de session ─────────────────────────────────────────────────
+
+/** Joue un bip d'alarme via Web Audio + vibration + notification système */
+async function playAlarm(isWork: boolean) {
+  // 1. Vibration moteur (Android — iOS ignore silencieusement)
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate([600, 200, 600, 200, 600, 200, 600]);
+  }
+
+  // 2. Son via Web Audio API (fonctionne sur iOS PWA sans fichier audio)
+  try {
+    const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (AudioCtx) {
+      const ctx = new AudioCtx();
+      const beepOnce = (startAt: number) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type            = "sine";
+        osc.frequency.value = isWork ? 523 : 440; // Do5 (fin travail) ou La4 (fin pause)
+        gain.gain.setValueAtTime(0.6, startAt);
+        gain.gain.exponentialRampToValueAtTime(0.001, startAt + 0.7);
+        osc.start(startAt);
+        osc.stop(startAt + 0.7);
+      };
+      // 3 bips espacés de 0.9s
+      [0, 0.9, 1.8].forEach((t) => beepOnce(ctx.currentTime + t));
+    }
+  } catch { /* Web Audio non disponible */ }
+
+  // 3. Notification système push (affiche bannière + son système)
+  if ("serviceWorker" in navigator && "Notification" in window && Notification.permission === "granted") {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(
+        isWork ? "⏰ Session terminée !" : "⏰ Pause terminée !",
+        {
+          body:              isWork ? "Excellent ! Prends une pause bien méritée 🌿" : "C'est reparti ! 🎯",
+          icon:              "/icons/icon-192.png",
+          badge:             "/icons/icon-192.png",
+          tag:               "concentration-alarm",
+          requireInteraction: true,
+        }
+      );
+    } catch { /* Notification non disponible */ }
+  }
+}
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -75,8 +125,9 @@ export default function ConcentrationPage() {
         if (r <= 1) {
           clearInterval(intervalRef.current!);
           setRunning(false);
-          // Passage automatique à la phase suivante
+          // Passage automatique à la phase suivante + alarme
           setPhase((p) => {
+            void playAlarm(p === "work");  // déclenche bips + vibration + notification
             if (p === "work") {
               setRemaining(breakDuration * 60);
               setElapsed(0);
@@ -342,6 +393,7 @@ export default function ConcentrationPage() {
           </div>
         </div>
 
+        <DebugZone pageId="concentration" />
       </div>
     </>
   );

@@ -3,6 +3,7 @@
 import { useDashboard } from "@/lib/hooks/useDashboard";
 import { DomainCard, DomainCardSkeleton } from "@/components/ui/DomainCard";
 import { colors, font } from "@/lib/tokens";
+import { DebugZone } from "@/components/ui/DebugZone";
 
 export default function DefisPage() {
   const { data, loading, error } = useDashboard();
@@ -45,6 +46,7 @@ export default function DefisPage() {
         </div>
       )}
 
+      <DebugZone pageId="defis" />
     </div>
   );
 }

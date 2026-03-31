@@ -9,6 +9,7 @@ import { ToggleRow, ActionRow, SectionLabel, GroupCard } from "@/components/prof
 import { DeleteModal } from "@/components/profil/DeleteModal";
 import { GoogleDisconnectModal } from "@/components/profil/GoogleDisconnectModal";
 import { GoogleCalendarPicker } from "@/components/calendar/GoogleCalendarPicker";
+import { DebugZone } from "@/components/ui/DebugZone";
 import type { GoogleCalendarItem } from "@/components/calendar/GoogleCalendarPicker";
 
 // ─── Version de l'application ────────────────────────────────────────────────
@@ -109,20 +110,27 @@ export default function ProfilPage() {
     }
   }
 
-  /** Reconnexion Google Calendar — relance le flux OAuth avec le scope Calendar */
+  /**
+   * Connecte (ou reconnecte) Google Calendar.
+   * Utilise linkIdentity pour préserver la session email/password existante.
+   * Fonctionne aussi bien pour un 1er lien que pour une reconnexion après déconnexion.
+   */
   async function handleGoogleConnect() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/app/profil`,
-        scopes: "https://www.googleapis.com/auth/calendar",
-        queryParams: {
-          access_type: "offline",
-          prompt:      "consent",
-        },
-      },
-    });
-    if (error) console.error("[Profil] Google connect error:", error.message);
+    const oauthOptions = {
+      redirectTo: `${window.location.origin}/auth/callback?next=/app/profil`,
+      scopes:     "https://www.googleapis.com/auth/calendar",
+      queryParams: { access_type: "offline", prompt: "consent" },
+    };
+
+    // linkIdentity : ajoute Google à un compte existant sans toucher à la session courante
+    const { error } = await supabase.auth.linkIdentity({ provider: "google", options: oauthOptions });
+
+    if (error) {
+      console.warn("[Profil] linkIdentity failed, fallback signInWithOAuth:", error.message);
+      // Fallback pour les versions de Supabase JS antérieures à v2.36
+      const { error: e2 } = await supabase.auth.signInWithOAuth({ provider: "google", options: oauthOptions });
+      if (e2) console.error("[Profil] Google connect error:", e2.message);
+    }
   }
 
   /** Sauvegarde les calendriers sélectionnés dans le GoogleCalendarPicker */
@@ -528,6 +536,8 @@ export default function ProfilPage() {
             </GroupCard>
           </div>
         )}
+
+        <DebugZone pageId="profil" />
 
         {/* ── Footer version (tap ×5 = révèle dev tools) ── */}
         <button

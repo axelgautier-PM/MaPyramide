@@ -56,7 +56,8 @@ export function InteractiveDial({
   onChange: (minutes: number) => void;
   size?: number;
 }) {
-  const dragging = useRef(false);
+  const dragging      = useRef(false);
+  const lastSnapped   = useRef<number | null>(null);
 
   const stroke  = 2.5;
   const padding = 16;
@@ -90,12 +91,22 @@ export function InteractiveDial({
     if (isActive) return;
     dragging.current = true;
     (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
-    onChange(minutesFromPointer(e));
+    const mins = minutesFromPointer(e);
+    lastSnapped.current = mins;
+    onChange(mins);
   }
 
   function handlePointerMove(e: React.PointerEvent<SVGSVGElement>) {
     if (!dragging.current || isActive) return;
-    onChange(minutesFromPointer(e));
+    const mins = minutesFromPointer(e);
+    // Vibre uniquement quand la valeur snappée change (retour haptique par cran de 5 min)
+    if (mins !== lastSnapped.current) {
+      lastSnapped.current = mins;
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(6);
+      }
+      onChange(mins);
+    }
   }
 
   function handlePointerUp() {
