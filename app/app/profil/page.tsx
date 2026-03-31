@@ -7,11 +7,12 @@ import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
 import { colors, font, shadows } from "@/lib/tokens";
 import { ToggleRow, ActionRow, SectionLabel, GroupCard } from "@/components/profil/ProfilUI";
 import { DeleteModal } from "@/components/profil/DeleteModal";
+import { GoogleDisconnectModal } from "@/components/profil/GoogleDisconnectModal";
 import { GoogleCalendarPicker } from "@/components/calendar/GoogleCalendarPicker";
 import type { GoogleCalendarItem } from "@/components/calendar/GoogleCalendarPicker";
 
 // ─── Version de l'application ────────────────────────────────────────────────
-const APP_VERSION = "0.1.0";
+const APP_VERSION = "0.2.0";
 
 const DAY_LABELS = [
   { label: "L",  value: 1 },
@@ -41,6 +42,9 @@ export default function ProfilPage() {
   // Google Calendar
   const [googleLoading,       setGoogleLoading]       = useState(false);
   const [showCalendarPicker,  setShowCalendarPicker]  = useState(false);
+
+  // Déconnexion Google Calendar
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
 
   // Suppression de compte
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -364,21 +368,6 @@ export default function ProfilPage() {
                       </div>
                     )}
 
-                    {/* Bouton test */}
-                    <div className="px-5 py-3" style={{ borderTop: `1px solid ${colors.border}` }}>
-                      <button
-                        onClick={handleTestNotification}
-                        disabled={testLoading}
-                        className="text-[13px] transition-all active:opacity-60"
-                        style={{
-                          fontFamily: font.dm,
-                          fontWeight: 500,
-                          color: testSent ? colors.success : colors.primary,
-                        }}
-                      >
-                        {testSent ? "✓ Arrivée dans 5s…" : testLoading ? "Planification…" : "Envoyer une notification test"}
-                      </button>
-                    </div>
                   </>
                 )}
               </>
@@ -417,13 +406,13 @@ export default function ProfilPage() {
                   first={false}
                 />
 
-                {/* Déconnexion */}
+                {/* Déconnexion — ouvre la modale de confirmation */}
                 <ActionRow
                   icon="🔌"
-                  label={googleLoading ? "Déconnexion…" : "Déconnecter Google Calendar"}
+                  label="Déconnecter Google Calendar"
                   description="Supprime la sync — tes créneaux MaPyramide restent intacts"
                   color={colors.danger}
-                  onClick={handleGoogleDisconnect}
+                  onClick={() => setShowDisconnectModal(true)}
                   first={false}
                 />
               </div>
@@ -520,6 +509,22 @@ export default function ProfilPage() {
                 onClick={handleReinitOnboarding}
                 first={false}
               />
+
+              {/* Bouton test notification (déplacé depuis la section Notifications) */}
+              <div className="px-5 py-3" style={{ borderTop: `1px solid ${colors.border}` }}>
+                <button
+                  onClick={handleTestNotification}
+                  disabled={testLoading}
+                  className="text-[13px] transition-all active:opacity-60"
+                  style={{
+                    fontFamily: font.dm,
+                    fontWeight: 500,
+                    color: testSent ? colors.success : colors.primary,
+                  }}
+                >
+                  {testSent ? "✓ Arrivée dans 5s…" : testLoading ? "Planification…" : "🔔 Envoyer une notification test"}
+                </button>
+              </div>
             </GroupCard>
           </div>
         )}
@@ -536,6 +541,15 @@ export default function ProfilPage() {
         </button>
 
       </div>
+
+      {/* ── Modale déconnexion Google Calendar ── */}
+      {showDisconnectModal && (
+        <GoogleDisconnectModal
+          onCancel={() => setShowDisconnectModal(false)}
+          onConfirm={async () => { await handleGoogleDisconnect(); setShowDisconnectModal(false); }}
+          loading={googleLoading}
+        />
+      )}
 
       {/* ── Modale suppression de compte ── */}
       {showDeleteModal && (

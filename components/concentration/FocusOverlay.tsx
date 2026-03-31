@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { font } from "@/lib/tokens";
 import { TimerArc } from "./TimerDial";
 
@@ -44,13 +43,13 @@ export function FocusOverlay({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col safe-top" style={{ background: "#000" }}>
-      {/* Photo de fond plein écran */}
-      <Image
+      {/* Photo de fond plein écran — img natif pour éviter les contraintes de next/image fill */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={bgUrl}
         alt=""
-        fill
         aria-hidden
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 w-full h-full pointer-events-none"
         style={{ objectFit: "cover", objectPosition: "center" }}
       />
 

@@ -11,10 +11,10 @@ export function Header() {
 
   return (
     <header
-      className="sticky top-0 z-40 safe-top"
+      className="fixed top-0 left-0 right-0 z-40 safe-top"
       style={{ background: colors.surface, borderBottom: `1.5px solid ${colors.border}` }}
     >
-      <div className="app-shell px-4 h-14 flex items-center justify-between">
+      <div className="app-shell px-4 h-11 flex items-center justify-between">
 
         {/* Logo */}
         <Link href="/app" className="flex items-center gap-2.5">
