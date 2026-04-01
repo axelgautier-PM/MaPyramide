@@ -94,18 +94,6 @@ export function BottomNav() {
       matchPaths: ["/app/taches"],
     },
     {
-      href: "/app",
-      label: "Objectifs",
-      icon: (active: boolean) => <TargetIcon active={active} />,
-      matchPaths: ["/app"],
-    },
-    {
-      href: "/app/defis",
-      label: "Défis",
-      icon: (active: boolean) => <BoltIcon active={active} />,
-      matchPaths: ["/app/defis"],
-    },
-    {
       href: "/app/calendrier",
       label: "Calendrier",
       icon: (active: boolean) => <CalendarIcon active={active} />,
@@ -116,6 +104,18 @@ export function BottomNav() {
       label: "Concentration",
       icon: (active: boolean) => <ConcentrationIcon active={active} />,
       matchPaths: ["/app/concentration"],
+    },
+    {
+      href: "/app/defis",
+      label: "Défis",
+      icon: (active: boolean) => <BoltIcon active={active} />,
+      matchPaths: ["/app/defis"],
+    },
+    {
+      href: "/app",
+      label: "Objectifs",
+      icon: (active: boolean) => <TargetIcon active={active} />,
+      matchPaths: ["/app"],
     },
   ];
 

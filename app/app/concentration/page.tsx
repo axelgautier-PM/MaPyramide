@@ -97,7 +97,9 @@ export default function ConcentrationPage() {
   const [focusMode,         setFocusMode]         = useState(false);
   const [showBreakDropdown, setShowBreakDropdown] = useState(false);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const intervalRef       = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Signale qu'on doit démarrer automatiquement la pause après une session de travail
+  const autoStartBreakRef = useRef(false);
 
   const totalSecs = phase === "break" ? breakDuration * 60 : workDuration * 60;
   const progress  = chronoMode
@@ -131,6 +133,7 @@ export default function ConcentrationPage() {
             if (p === "work") {
               setRemaining(breakDuration * 60);
               setElapsed(0);
+              autoStartBreakRef.current = true; // déclenche le démarrage automatique de la pause
               return "break";
             } else {
               setSessionNum((s) => (s < MAX_SESSIONS ? s + 1 : 1));
@@ -154,6 +157,14 @@ export default function ConcentrationPage() {
     }
     return () => clearInterval(intervalRef.current!);
   }, [running, tick]);
+
+  // Démarre automatiquement la pause dès que la phase bascule sur "break"
+  useEffect(() => {
+    if (phase === "break" && autoStartBreakRef.current) {
+      autoStartBreakRef.current = false;
+      setRunning(true);
+    }
+  }, [phase]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -281,7 +292,7 @@ export default function ConcentrationPage() {
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M3 2l10 5-10 5V2z" fill="white" />
               </svg>
-              Démarrer →
+              Démarrer
             </button>
           </div>
         </div>

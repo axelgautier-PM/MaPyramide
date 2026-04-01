@@ -111,6 +111,7 @@ export default function TachesPage() {
         <DayWidget
           starredItems={todos.starredItems}
           onToggleComplete={todos.toggleComplete}
+          onToggleStar={todos.toggleStar}
           onTap={setSelectedItem}
         />
 

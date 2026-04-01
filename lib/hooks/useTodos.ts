@@ -175,9 +175,15 @@ export function useTodos(): UseTodosReturn {
 
   // ── Dérivés ─────────────────────────────────────────────────────────────
 
+  // Tri : liste d'abord (ordre d'affichage des onglets), puis position dans la liste
   const starredItems = items
     .filter((i) => i.is_starred && !i.is_completed)
-    .sort((a, b) => a.position - b.position)
+    .sort((a, b) => {
+      const listPosA = lists.findIndex((l) => l.id === a.list_id);
+      const listPosB = lists.findIndex((l) => l.id === b.list_id);
+      if (listPosA !== listPosB) return listPosA - listPosB;
+      return a.position - b.position;
+    })
     .slice(0, 5);
 
   return {

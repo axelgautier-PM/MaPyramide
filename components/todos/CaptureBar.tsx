@@ -109,8 +109,11 @@ export function CaptureBar({ onCapture, placeholder = "Capture rapide…" }: Cap
         transition: "border-color 0.2s, box-shadow 0.2s",
       }}
     >
-      {/* Icône inbox */}
-      <span className="text-[16px] shrink-0 select-none">📥</span>
+      {/* Icône crayon — signale clairement un champ de saisie */}
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0" style={{ color: colors.text3 }}>
+        <path d="M11 2l3 3-8 8H3v-3l8-8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <path d="M9 4l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
 
       {/* Input texte */}
       <input
