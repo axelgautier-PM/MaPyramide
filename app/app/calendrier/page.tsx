@@ -314,6 +314,7 @@ export default function CalendrierPage() {
       {sheetOpen && (
         <AddEventSheet
           initialForm={initialForm}
+          isEditing={activeEvent !== null}
           onClose={() => { setSheetOpen(false); setActiveEvent(null); }}
           onSave={handleSave}
         />

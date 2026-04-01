@@ -12,6 +12,7 @@ interface TodoItemRowProps {
   onToggleComplete: () => void;
   onToggleStar:     () => void;
   onTap:            () => void;   // ouvre le détail
+  onDelete?:        () => void;   // supprime la tâche (affiché si complétée)
 }
 
 // ─── Composant ────────────────────────────────────────────────────────────────
@@ -22,6 +23,7 @@ export function TodoItemRow({
   onToggleComplete,
   onToggleStar,
   onTap,
+  onDelete,
 }: TodoItemRowProps) {
   return (
     <div
@@ -32,21 +34,33 @@ export function TodoItemRow({
         opacity:    item.is_completed ? 0.55 : 1,
       }}
     >
-      {/* ── Handle drag ── */}
-      <div
-        {...dragHandleProps}
-        className="shrink-0 flex items-center justify-center w-5 cursor-grab active:cursor-grabbing touch-none"
-        aria-label="Déplacer"
-      >
-        <svg width="10" height="14" viewBox="0 0 10 14" fill="none">
-          <circle cx="3" cy="3"  r="1.2" fill={colors.text3} />
-          <circle cx="7" cy="3"  r="1.2" fill={colors.text3} />
-          <circle cx="3" cy="7"  r="1.2" fill={colors.text3} />
-          <circle cx="7" cy="7"  r="1.2" fill={colors.text3} />
-          <circle cx="3" cy="11" r="1.2" fill={colors.text3} />
-          <circle cx="7" cy="11" r="1.2" fill={colors.text3} />
-        </svg>
-      </div>
+      {/* ── Handle drag ou bouton supprimer ── */}
+      {item.is_completed && onDelete ? (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="shrink-0 flex items-center justify-center w-5 h-5 transition-all active:scale-90"
+          aria-label="Supprimer la tâche"
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M2 2l9 9M11 2l-9 9" stroke={colors.danger} strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
+      ) : (
+        <div
+          {...dragHandleProps}
+          className="shrink-0 flex items-center justify-center w-5 cursor-grab active:cursor-grabbing touch-none"
+          aria-label="Déplacer"
+        >
+          <svg width="10" height="14" viewBox="0 0 10 14" fill="none">
+            <circle cx="3" cy="3"  r="1.2" fill={colors.text3} />
+            <circle cx="7" cy="3"  r="1.2" fill={colors.text3} />
+            <circle cx="3" cy="7"  r="1.2" fill={colors.text3} />
+            <circle cx="7" cy="7"  r="1.2" fill={colors.text3} />
+            <circle cx="3" cy="11" r="1.2" fill={colors.text3} />
+            <circle cx="7" cy="11" r="1.2" fill={colors.text3} />
+          </svg>
+        </div>
+      )}
 
       {/* ── Checkbox ── */}
       <button

@@ -98,6 +98,7 @@ export default function ConcentrationPage() {
   const [showBreakDropdown, setShowBreakDropdown] = useState(false);
 
   const intervalRef       = useRef<ReturnType<typeof setInterval> | null>(null);
+  const deadlineRef       = useRef<number | null>(null);
   // Signale qu'on doit démarrer automatiquement la pause après une session de travail
   const autoStartBreakRef = useRef(false);
 
@@ -122,29 +123,31 @@ export default function ConcentrationPage() {
   const tick = useCallback(() => {
     if (chronoMode) {
       setElapsed((e) => e + 1);
-    } else {
-      setRemaining((r) => {
-        if (r <= 1) {
-          clearInterval(intervalRef.current!);
-          setRunning(false);
-          // Passage automatique à la phase suivante + alarme
-          setPhase((p) => {
-            void playAlarm(p === "work");  // déclenche bips + vibration + notification
-            if (p === "work") {
-              setRemaining(breakDuration * 60);
-              setElapsed(0);
-              autoStartBreakRef.current = true; // déclenche le démarrage automatique de la pause
-              return "break";
-            } else {
-              setSessionNum((s) => (s < MAX_SESSIONS ? s + 1 : 1));
-              setRemaining(workDuration * 60);
-              setElapsed(0);
-              return "work";
-            }
-          });
-          return 0;
+      return;
+    }
+    if (!deadlineRef.current) return;
+    const msLeft = deadlineRef.current - Date.now();
+    const sLeft  = Math.max(0, Math.ceil(msLeft / 1000));
+    setRemaining(sLeft);
+    if (sLeft <= 0) {
+      clearInterval(intervalRef.current!);
+      intervalRef.current = null;
+      setRunning(false);
+      setPhase((p) => {
+        void playAlarm(p === "work");
+        if (p === "work") {
+          deadlineRef.current = Date.now() + breakDuration * 60 * 1000;
+          setRemaining(breakDuration * 60);
+          setElapsed(0);
+          autoStartBreakRef.current = true;
+          return "break";
+        } else {
+          deadlineRef.current = null;
+          setSessionNum((s) => (s < MAX_SESSIONS ? s + 1 : 1));
+          setRemaining(workDuration * 60);
+          setElapsed(0);
+          return "work";
         }
-        return r - 1;
       });
     }
   }, [chronoMode, breakDuration, workDuration]);
@@ -166,9 +169,21 @@ export default function ConcentrationPage() {
     }
   }, [phase]);
 
+  // Force un recalcul immédiat au retour en premier plan
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === "visible" && running && !chronoMode) {
+        tick();
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [running, chronoMode, tick]);
+
   // ── Actions ───────────────────────────────────────────────────────────────
 
   function handleStart() {
+    deadlineRef.current = Date.now() + workDuration * 60 * 1000;
     setPhase("work");
     setRemaining(workDuration * 60);
     setElapsed(0);
@@ -179,6 +194,7 @@ export default function ConcentrationPage() {
 
   function handleStop() {
     clearInterval(intervalRef.current!);
+    deadlineRef.current = null;
     setRunning(false);
     setPhase("idle");
     setRemaining(workDuration * 60);
@@ -189,6 +205,7 @@ export default function ConcentrationPage() {
 
   function handleSkipToBreak() {
     clearInterval(intervalRef.current!);
+    deadlineRef.current = Date.now() + breakDuration * 60 * 1000;
     setRunning(false);
     setPhase("break");
     setRemaining(breakDuration * 60);
@@ -289,9 +306,6 @@ export default function ConcentrationPage() {
                 boxShadow: `0 4px 16px ${colors.primary}40`,
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M3 2l10 5-10 5V2z" fill="white" />
-              </svg>
               Démarrer
             </button>
           </div>

@@ -28,6 +28,9 @@ export interface UseTodosReturn {
 
   createList:        (name: string, icon?: string, color?: string) => Promise<TodoList>;
   deleteList:        (id: string) => Promise<void>;
+  moveItemToList:    (itemId: string, newListId: string) => Promise<void>;
+  updateList:        (id: string, patch: Partial<Pick<TodoList, "name" | "icon" | "color">>) => Promise<void>;
+  reorderLists:      (orderedIds: string[]) => Promise<void>;
 
   /** Tâches étoilées non terminées (max 5) pour le widget Ma journée */
   starredItems:      TodoItem[];
@@ -161,6 +164,27 @@ export function useTodos(): UseTodosReturn {
     return newList;
   }, [lists.length, profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const moveItemToList = useCallback(async (itemId: string, newListId: string) => {
+    // Mise à jour optimiste
+    setItems((prev) => prev.map((i) => i.id === itemId ? { ...i, list_id: newListId, position: 0 } : i));
+    await supabase.from("todo_items").update({ list_id: newListId, position: 0 }).eq("id", itemId);
+  }, []);
+
+  const updateList = useCallback(async (id: string, patch: Partial<Pick<TodoList, "name" | "icon" | "color">>) => {
+    setLists((prev) => prev.map((l) => l.id === id ? { ...l, ...patch } : l));
+    await supabase.from("todo_lists").update(patch).eq("id", id);
+  }, []);
+
+  const reorderLists = useCallback(async (orderedIds: string[]) => {
+    setLists((prev) => {
+      const posMap = Object.fromEntries(orderedIds.map((id, i) => [id, i]));
+      return [...prev].sort((a, b) => (posMap[a.id] ?? 999) - (posMap[b.id] ?? 999));
+    });
+    for (const [i, id] of orderedIds.entries()) {
+      await supabase.from("todo_lists").update({ position: i }).eq("id", id);
+    }
+  }, []);
+
   const deleteList = useCallback(async (id: string) => {
     setLists((prev) => prev.filter((l) => l.id !== id));
     setItems((prev) => prev.filter((i) => i.list_id !== id));
@@ -200,6 +224,9 @@ export function useTodos(): UseTodosReturn {
     reorderItems,
     createList,
     deleteList,
+    moveItemToList,
+    updateList,
+    reorderLists,
     starredItems,
   };
 }

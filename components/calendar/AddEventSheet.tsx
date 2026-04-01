@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { EventForm } from "@/types/calendar";
 import { emptyForm } from "@/types/calendar";
 import { Btn } from "@/components/ui/Btn";
@@ -22,13 +22,39 @@ const REMINDER_OPTIONS = [
 
 interface AddEventSheetProps {
   initialForm?: Partial<EventForm>;
+  isEditing?: boolean;
   onClose: () => void;
   onSave:  (form: EventForm) => Promise<void>;
 }
 
-export function AddEventSheet({ initialForm, onClose, onSave }: AddEventSheetProps) {
+export function AddEventSheet({ initialForm, isEditing, onClose, onSave }: AddEventSheetProps) {
   const { domains, notifPrefs, setNotifPrefs } = useAppStore();
   const push = usePushNotifications();
+
+  const touchStartY = useRef<number | null>(null);
+  const sheetRef    = useRef<HTMLDivElement>(null);
+
+  function onHandleTouchStart(e: React.TouchEvent) {
+    touchStartY.current = e.touches[0].clientY;
+  }
+  function onHandleTouchMove(e: React.TouchEvent) {
+    if (touchStartY.current === null) return;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    if (dy > 0 && sheetRef.current) {
+      sheetRef.current.style.transform  = `translateY(${Math.min(dy, 300)}px)`;
+      sheetRef.current.style.transition = "none";
+    }
+  }
+  function onHandleTouchEnd(e: React.TouchEvent) {
+    if (touchStartY.current === null) return;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartY.current = null;
+    if (sheetRef.current) {
+      sheetRef.current.style.transform  = "";
+      sheetRef.current.style.transition = "";
+    }
+    if (dy > 80) onClose();
+  }
 
   const [form,    setForm]    = useState<EventForm>(() => emptyForm(initialForm));
   const [loading, setLoading] = useState(false);
@@ -151,9 +177,10 @@ export function AddEventSheet({ initialForm, onClose, onSave }: AddEventSheetPro
 
       {/* Sheet */}
       <div
+        ref={sheetRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Nouveau créneau"
+        aria-label={isEditing ? "Modifier le créneau" : "Nouveau créneau"}
         className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-y-auto"
         style={{
           background:   colors.surface,
@@ -165,16 +192,22 @@ export function AddEventSheet({ initialForm, onClose, onSave }: AddEventSheetPro
         }}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1">
+        <div
+          className="flex justify-center pt-3 cursor-grab touch-none"
+          style={{ paddingBottom: 8 }}
+          onTouchStart={onHandleTouchStart}
+          onTouchMove={onHandleTouchMove}
+          onTouchEnd={onHandleTouchEnd}
+        >
           <div className="w-10 h-1 rounded-full" style={{ background: colors.border }} />
         </div>
 
         <div className="px-5 pt-2 pb-4 flex flex-col gap-5">
           <h2
             className="text-[18px]"
-            style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1 }}
+            style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1, wordBreak: "break-word", overflowWrap: "anywhere" }}
           >
-            Nouveau créneau
+            {isEditing ? "Modifier le créneau" : "Nouveau créneau"}
           </h2>
 
           {/* Domaine */}
