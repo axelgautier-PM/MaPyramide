@@ -105,7 +105,15 @@ export default function TachesListesPage() {
     setShowNewList(false);
   }
 
-  const activeListForPicker = todos.lists.find((l) => l.id === emojiPickerFor);
+  const activeListForPicker      = todos.lists.find((l) => l.id === emojiPickerFor);
+  const activeListForColorPicker = todos.lists.find((l) => l.id === colorPickerFor);
+
+  // ── Changer la couleur ────────────────────────────────────────────────────
+  async function handlePickColor(color: string) {
+    if (!colorPickerFor) return;
+    setColorPickerFor(null);
+    await todos.updateList(colorPickerFor, { color });
+  }
 
   return (
     <div className="flex flex-col gap-4 pb-6">
@@ -244,56 +252,18 @@ export default function TachesListesPage() {
                                 </button>
                               )}
 
-                              {/* Pastille couleur — cliquable pour ouvrir le picker */}
-                              <div className="relative shrink-0">
-                                <button
-                                  onClick={() => {
-                                    setEmojiPickerFor(null);
-                                    setColorPickerFor(colorPickerFor === list.id ? null : list.id);
-                                  }}
-                                  className="w-6 h-6 rounded-full transition-all active:scale-90 ring-offset-1"
-                                  style={{
-                                    background:  list.color,
-                                    boxShadow:   colorPickerFor === list.id
-                                      ? `0 0 0 2px white, 0 0 0 4px ${list.color}`
-                                      : "none",
-                                  }}
-                                  aria-label="Changer la couleur"
-                                />
-                                {colorPickerFor === list.id && (
-                                  <>
-                                    <div className="fixed inset-0 z-10" onClick={() => setColorPickerFor(null)} />
-                                    <div
-                                      className="absolute right-0 top-full mt-2 rounded-2xl p-2.5 z-20 grid gap-1.5"
-                                      style={{
-                                        background:          colors.surface,
-                                        border:              `1.5px solid ${colors.border}`,
-                                        boxShadow:           "0 8px 24px rgba(0,0,0,0.12)",
-                                        gridTemplateColumns: "repeat(5, 1fr)",
-                                        width:               184,
-                                      }}
-                                    >
-                                      {PRESET_COLORS.map((color) => (
-                                        <button
-                                          key={color}
-                                          onClick={() => {
-                                            setColorPickerFor(null);
-                                            void todos.updateList(list.id, { color });
-                                          }}
-                                          className="w-8 h-8 rounded-full transition-all active:scale-90"
-                                          style={{
-                                            background: color,
-                                            boxShadow:  list.color === color
-                                              ? `0 0 0 2px white, 0 0 0 4px ${color}`
-                                              : "none",
-                                          }}
-                                          aria-label={color}
-                                        />
-                                      ))}
-                                    </div>
-                                  </>
-                                )}
-                              </div>
+                              {/* Pastille couleur — tap → bottom sheet */}
+                              <button
+                                onClick={() => { setEmojiPickerFor(null); setColorPickerFor(list.id); }}
+                                className="shrink-0 w-6 h-6 rounded-full transition-all active:scale-90"
+                                style={{
+                                  background: list.color,
+                                  boxShadow:  colorPickerFor === list.id
+                                    ? `0 0 0 2.5px white, 0 0 0 4px ${list.color}`
+                                    : "none",
+                                }}
+                                aria-label="Changer la couleur"
+                              />
                             </div>
                           </SwipeableRow>
                         </div>
@@ -438,6 +408,63 @@ export default function TachesListesPage() {
               >
                 Annuler
               </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Picker couleur — bottom sheet fixe ── */}
+      {colorPickerFor && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            style={{ background: "rgba(0,0,0,0.3)" }}
+            onClick={() => setColorPickerFor(null)}
+          />
+          <div
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl"
+            style={{
+              background:    colors.surface,
+              paddingBottom: "max(28px, env(safe-area-inset-bottom))",
+              boxShadow:     "0 -8px 32px rgba(0,0,0,0.12)",
+            }}
+          >
+            {/* Poignée */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 rounded-full" style={{ background: colors.border }} />
+            </div>
+
+            <div className="px-4 pb-2 flex items-center justify-between">
+              <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
+                Couleur de la liste
+              </p>
+              {activeListForColorPicker && (
+                <span className="text-[13px]" style={{ fontFamily: font.dm, color: colors.text2 }}>
+                  {activeListForColorPicker.icon} {activeListForColorPicker.name}
+                </span>
+              )}
+            </div>
+
+            <div className="px-4 pb-4 grid gap-3" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
+              {PRESET_COLORS.map((color) => (
+                <button
+                  key={color}
+                  onClick={() => handlePickColor(color)}
+                  className="h-14 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+                  style={{
+                    background: color,
+                    boxShadow:  activeListForColorPicker?.color === color
+                      ? `0 0 0 3px white, 0 0 0 5px ${color}`
+                      : "none",
+                  }}
+                >
+                  {activeListForColorPicker?.color === color && (
+                    <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+                      <path d="M1 7l5 5L17 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </>
