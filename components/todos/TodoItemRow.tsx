@@ -1,24 +1,29 @@
 "use client";
 
+import type { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import { colors, font } from "@/lib/tokens";
 import type { TodoItem } from "@/types/todo";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface TodoItemRowProps {
   item:             TodoItem;
+  dragHandleProps:  DraggableProvidedDragHandleProps | null | undefined;
   isDragging:       boolean;
   onToggleComplete: () => void;
   onToggleStar:     () => void;
   onTap:            () => void;   // ouvre le détail
+  onDelete?:        () => void;   // bouton rouge poubelle sur les tâches terminées
 }
 
 // ─── Composant ────────────────────────────────────────────────────────────────
 export function TodoItemRow({
   item,
+  dragHandleProps,
   isDragging,
   onToggleComplete,
   onToggleStar,
   onTap,
+  onDelete,
 }: TodoItemRowProps) {
   return (
     <div
@@ -30,6 +35,35 @@ export function TodoItemRow({
         userSelect: "none",
       }}
     >
+      {/* ── Handle drag (tâches actives) ou bouton poubelle (tâches terminées) ── */}
+      {item.is_completed && onDelete ? (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all active:scale-90"
+          style={{ background: colors.dangerLight }}
+          aria-label="Supprimer la tâche"
+        >
+          <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
+            <path d="M1 3h9M4 3V2h3v1M2 3l.8 9h5.4L9 3" stroke={colors.danger} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : (
+        <div
+          {...dragHandleProps}
+          className="shrink-0 flex items-center justify-center w-5 cursor-grab active:cursor-grabbing touch-none"
+          aria-label="Déplacer"
+        >
+          <svg width="10" height="14" viewBox="0 0 10 14" fill="none">
+            <circle cx="3" cy="3"  r="1.2" fill={colors.text3} />
+            <circle cx="7" cy="3"  r="1.2" fill={colors.text3} />
+            <circle cx="3" cy="7"  r="1.2" fill={colors.text3} />
+            <circle cx="7" cy="7"  r="1.2" fill={colors.text3} />
+            <circle cx="3" cy="11" r="1.2" fill={colors.text3} />
+            <circle cx="7" cy="11" r="1.2" fill={colors.text3} />
+          </svg>
+        </div>
+      )}
+
       {/* ── Checkbox ── */}
       <button
         onClick={(e) => { e.stopPropagation(); onToggleComplete(); }}
