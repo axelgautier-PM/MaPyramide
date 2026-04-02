@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { colors, font } from "@/lib/tokens";
 
 // ─── Déclaration Web Speech API (pas de types natifs dans TS) ─────────────────
@@ -32,13 +32,24 @@ interface CaptureBarProps {
   placeholder?: string;
 }
 
+// Handle exposé via ref pour focus externe (ex: tap zone liste vide)
+export interface CaptureBarHandle {
+  focus: () => void;
+}
+
 // ─── Composant ────────────────────────────────────────────────────────────────
-export function CaptureBar({ onCapture, placeholder = "Ajouter une tâche" }: CaptureBarProps) {
+export const CaptureBar = forwardRef<CaptureBarHandle, CaptureBarProps>(
+function CaptureBar({ onCapture, placeholder = "Ajouter une tâche" }, ref) {
   const [text,      setText]      = useState("");
   const [listening, setListening] = useState(false);
   const [canAudio,  setCanAudio]  = useState(false);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const inputRef       = useRef<HTMLInputElement>(null);
+
+  // Expose focus() au parent via ref
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus(),
+  }));
 
   // Vérifie si l'API audio est disponible (client-side only)
   useEffect(() => {
@@ -174,4 +185,5 @@ export function CaptureBar({ onCapture, placeholder = "Ajouter une tâche" }: Ca
       </button>
     </div>
   );
-}
+});
+

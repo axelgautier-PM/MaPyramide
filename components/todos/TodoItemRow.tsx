@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import type { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import { colors, font } from "@/lib/tokens";
 import type { TodoItem } from "@/types/todo";
@@ -13,11 +12,8 @@ interface TodoItemRowProps {
   onToggleComplete: () => void;
   onToggleStar:     () => void;
   onTap:            () => void;
-  onDelete?:        () => void;   // bouton poubelle pour les tâches terminées
-  onRename?:        (newTitle: string) => void; // renommage appui long
+  onDelete?:        () => void; // bouton poubelle pour les tâches terminées
 }
-
-const LONG_PRESS_MS = 550; // durée appui long avant renommage
 
 // ─── Composant ────────────────────────────────────────────────────────────────
 export function TodoItemRow({
@@ -28,62 +24,7 @@ export function TodoItemRow({
   onToggleStar,
   onTap,
   onDelete,
-  onRename,
 }: TodoItemRowProps) {
-  const [renaming,    setRenaming]    = useState(false);
-  const [renameText,  setRenameText]  = useState("");
-  const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const movedRef    = useRef(false);
-  const renameInput = useRef<HTMLInputElement>(null);
-
-  // Auto-focus + sélection au démarrage du renommage (déclenche le clavier mobile)
-  useEffect(() => {
-    if (!renaming) return;
-    const t = setTimeout(() => {
-      renameInput.current?.focus();
-      renameInput.current?.select();
-    }, 50);
-    return () => clearTimeout(t);
-  }, [renaming]);
-
-  // ── Appui long → mode renommage ───────────────────────────────────────────
-  function onTitleTouchStart() {
-    if (!onRename) return;
-    movedRef.current = false;
-    timerRef.current = setTimeout(() => {
-      if (movedRef.current) return;
-      setRenameText(item.title);
-      setRenaming(true);
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
-      // Focus différé pour laisser le DOM se mettre à jour
-      requestAnimationFrame(() => {
-        renameInput.current?.focus();
-        renameInput.current?.select();
-      });
-    }, LONG_PRESS_MS);
-  }
-
-  function onTitleTouchMove() {
-    movedRef.current = true;
-    if (timerRef.current) clearTimeout(timerRef.current);
-  }
-
-  function onTitleTouchEnd() {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  }
-
-  // ── Valider le renommage ──────────────────────────────────────────────────
-  function commitRename() {
-    setRenaming(false);
-    const trimmed = renameText.trim();
-    if (trimmed && trimmed !== item.title) onRename?.(trimmed);
-  }
-
-  function onRenameKey(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") commitRename();
-    if (e.key === "Escape") setRenaming(false);
-  }
-
   return (
     <div
       className="flex items-center gap-2 px-3 py-3 rounded-xl transition-all select-none"
@@ -142,68 +83,44 @@ export function TodoItemRow({
         )}
       </button>
 
-      {/* ── Titre : tap = détail, appui long = renommage ── */}
-      {renaming ? (
-        <input
-          ref={renameInput}
-          autoFocus
-          type="text"
-          value={renameText}
-          onChange={(e) => setRenameText(e.target.value)}
-          onBlur={commitRename}
-          onKeyDown={onRenameKey}
-          className="flex-1 bg-transparent outline-none text-[14px]"
+      {/* ── Titre — tap ouvre le détail ── */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onTap(); }}
+        className="flex-1 flex flex-col items-start gap-0.5 min-w-0 text-left"
+      >
+        <span
+          className="text-[14px] leading-snug truncate w-full"
           style={{
-            fontFamily:    font.dm,
-            fontWeight:    item.is_starred ? 600 : 400,
-            color:         colors.text1,
-            borderBottom:  `1.5px solid ${colors.primary}`,
-            paddingBottom: 1,
-            minWidth:      0,
+            fontFamily:     font.dm,
+            fontWeight:     item.is_starred ? 600 : 400,
+            color:          item.is_completed ? colors.text3 : colors.text1,
+            textDecoration: item.is_completed ? "line-through" : "none",
           }}
-        />
-      ) : (
-        <button
-          onClick={(e) => { e.stopPropagation(); onTap(); }}
-          onTouchStart={onTitleTouchStart}
-          onTouchMove={onTitleTouchMove}
-          onTouchEnd={onTitleTouchEnd}
-          className="flex-1 flex flex-col items-start gap-0.5 min-w-0 text-left"
         >
-          <span
-            className="text-[14px] leading-snug truncate w-full"
-            style={{
-              fontFamily:     font.dm,
-              fontWeight:     item.is_starred ? 600 : 400,
-              color:          item.is_completed ? colors.text3 : colors.text1,
-              textDecoration: item.is_completed ? "line-through" : "none",
-            }}
-          >
-            {item.title}
-          </span>
+          {item.title}
+        </span>
 
-          {/* Badges sous-titre */}
-          {(item.description || item.calendar_event_id || item.due_date) && (
-            <div className="flex items-center gap-1.5">
-              {item.due_date && (
-                <span className="text-[11px]" style={{ color: colors.warning, fontFamily: font.dm }}>
-                  📅 {new Date(item.due_date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                </span>
-              )}
-              {item.calendar_event_id && (
-                <span className="text-[11px]" style={{ color: colors.primary, fontFamily: font.dm }}>
-                  📆 Planifié
-                </span>
-              )}
-              {item.description && (
-                <span className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>
-                  📝
-                </span>
-              )}
-            </div>
-          )}
-        </button>
-      )}
+        {/* Badges sous-titre */}
+        {(item.description || item.calendar_event_id || item.due_date) && (
+          <div className="flex items-center gap-1.5">
+            {item.due_date && (
+              <span className="text-[11px]" style={{ color: colors.warning, fontFamily: font.dm }}>
+                📅 {new Date(item.due_date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+              </span>
+            )}
+            {item.calendar_event_id && (
+              <span className="text-[11px]" style={{ color: colors.primary, fontFamily: font.dm }}>
+                📆 Planifié
+              </span>
+            )}
+            {item.description && (
+              <span className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>
+                📝
+              </span>
+            )}
+          </div>
+        )}
+      </button>
 
       {/* ── Étoile ── */}
       <button

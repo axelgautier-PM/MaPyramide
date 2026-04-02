@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { colors, font } from "@/lib/tokens";
 import { useTodos } from "@/lib/hooks/useTodos";
-import { CaptureBar } from "@/components/todos/CaptureBar";
+import { CaptureBar, type CaptureBarHandle } from "@/components/todos/CaptureBar";
 import { DayWidget } from "@/components/todos/DayWidget";
 import { TodoItemRow } from "@/components/todos/TodoItemRow";
 import { SwipeableRow } from "@/components/todos/SwipeableRow";
@@ -49,6 +49,7 @@ export default function TachesPage() {
   const [schedulingItem, setSchedulingItem] = useState<TodoItem | null>(null);
   const [showNewList,    setShowNewList]    = useState(false);
   const [newListName,    setNewListName]    = useState("");
+  const captureBarRef = useRef<CaptureBarHandle>(null);
 
   // ── Tâches de la liste sélectionnée ──────────────────────────────────────
   const listItems = todos.items
@@ -121,7 +122,11 @@ export default function TachesPage() {
         </h1>
 
         {/* ── Capture rapide ── */}
-        <CaptureBar onCapture={handleCapture} />
+        <CaptureBar
+          ref={captureBarRef}
+          onCapture={handleCapture}
+          placeholder={selectedList ? `Ajouter dans ${selectedList.icon} ${selectedList.name}…` : "Ajouter une tâche"}
+        />
 
         {/* ── Widget Ma journée ── */}
         <DayWidget
@@ -237,12 +242,16 @@ export default function TachesPage() {
               style={{ background: colors.surface, border: `1.5px solid ${colors.border}` }}
             >
               {listItems.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-10">
+                <button
+                  className="w-full flex flex-col items-center gap-2 py-10 transition-all active:opacity-60"
+                  onClick={() => captureBarRef.current?.focus()}
+                  aria-label="Ajouter une tâche"
+                >
                   <span className="text-[32px]">{selectedList.icon}</span>
                   <p className="text-[14px]" style={{ fontFamily: font.dm, color: colors.text3 }}>
-                    Aucune tâche — capture quelque chose ci-dessus !
+                    Appuie ici pour ajouter une tâche
                   </p>
-                </div>
+                </button>
               ) : (
                 <Droppable droppableId="todo-list">
                   {(provided) => (
@@ -277,7 +286,6 @@ export default function TachesPage() {
                                     onToggleComplete={() => todos.toggleComplete(item.id)}
                                     onToggleStar={() => todos.toggleStar(item.id)}
                                     onTap={() => setSelectedItem(item)}
-                                    onRename={(title) => todos.updateItem(item.id, { title })}
                                   />
                                 </SwipeableRow>
                               </div>
@@ -317,7 +325,6 @@ export default function TachesPage() {
                               onToggleStar={() => todos.toggleStar(item.id)}
                               onTap={() => setSelectedItem(item)}
                               onDelete={() => todos.deleteItem(item.id)}
-                              onRename={(title) => todos.updateItem(item.id, { title })}
                             />
                           </SwipeableRow>
                         ))
