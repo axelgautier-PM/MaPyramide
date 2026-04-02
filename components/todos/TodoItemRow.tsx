@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import { colors, font } from "@/lib/tokens";
 import type { TodoItem } from "@/types/todo";
@@ -36,6 +36,16 @@ export function TodoItemRow({
   const movedRef    = useRef(false);
   const renameInput = useRef<HTMLInputElement>(null);
 
+  // Auto-focus + sélection au démarrage du renommage (déclenche le clavier mobile)
+  useEffect(() => {
+    if (!renaming) return;
+    const t = setTimeout(() => {
+      renameInput.current?.focus();
+      renameInput.current?.select();
+    }, 50);
+    return () => clearTimeout(t);
+  }, [renaming]);
+
   // ── Appui long → mode renommage ───────────────────────────────────────────
   function onTitleTouchStart() {
     if (!onRename) return;
@@ -46,7 +56,10 @@ export function TodoItemRow({
       setRenaming(true);
       if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
       // Focus différé pour laisser le DOM se mettre à jour
-      requestAnimationFrame(() => renameInput.current?.select());
+      requestAnimationFrame(() => {
+        renameInput.current?.focus();
+        renameInput.current?.select();
+      });
     }, LONG_PRESS_MS);
   }
 

@@ -147,13 +147,16 @@ export default function TachesListesPage() {
                   return (
                     <Draggable key={list.id} draggableId={list.id} index={index}>
                       {(prov, snap) => (
-                        <div ref={prov.innerRef} {...prov.draggableProps}>
+                        <div ref={prov.innerRef} {...prov.draggableProps} className="rounded-2xl overflow-hidden">
                           <SwipeableRow
                             onRightAction={todos.lists.length > 1 ? () => handleDeleteList(list.id) : undefined}
                             rightAction={
-                              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                                <path d="M2 5h14M6 5V3h6v2M7 8v7M11 8v7M4 5l1 10h8l1-10" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
+                              <div className="flex flex-col items-center gap-1">
+                                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                                  <path d="M4 7h14M8 7V5h6v2M9 10v6M13 10v6M5 7l1 12h10L17 7" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                <span style={{ color: "white", fontSize: 10, fontWeight: 600, letterSpacing: 0.3 }}>Supprimer</span>
+                              </div>
                             }
                             rightActionColor={colors.danger}
                             contentBg={snap.isDragging ? colors.primaryLight : colors.surface}
@@ -286,18 +289,21 @@ export default function TachesListesPage() {
       ) : (
         <button
           onClick={() => setShowNewList(true)}
-          className="flex items-center gap-2 px-4 py-3 rounded-2xl text-[14px] transition-all active:opacity-70"
+          className="flex items-center gap-3 px-4 rounded-2xl text-[15px] transition-all active:opacity-70"
           style={{
             background: colors.surface,
             border:     `1.5px dashed ${colors.border2}`,
             color:      colors.text2,
             fontFamily: font.dm,
+            minHeight:  "64px",
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M7 1v12M1 7h12" stroke={colors.text2} strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-          Nouvelle liste
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: colors.bg }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 2v12M2 8h12" stroke={colors.text2} strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+          <span style={{ fontWeight: 500 }}>Nouvelle liste</span>
         </button>
       )}
 
@@ -363,7 +369,7 @@ export default function TachesListesPage() {
                 className="w-full py-3.5 rounded-2xl text-[15px] transition-all active:scale-95 disabled:opacity-40"
                 style={{ background: colors.primary, color: "#fff", fontFamily: font.dm, fontWeight: 600 }}
               >
-                Déplacer les tâches et supprimer
+                Déplacer les tâches
               </button>
               <button
                 onClick={confirmDeleteAndPurge}

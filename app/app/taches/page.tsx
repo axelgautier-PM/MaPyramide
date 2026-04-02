@@ -59,7 +59,6 @@ export default function TachesPage() {
     });
 
   const selectedList    = todos.lists.find((l) => l.id === todos.selectedListId);
-  const incompleteCount = listItems.filter((i) => !i.is_completed).length;
 
   // ── Capture rapide ────────────────────────────────────────────────────────
   function handleCapture(text: string) {
@@ -114,19 +113,12 @@ export default function TachesPage() {
       <div className="flex flex-col gap-4 pb-6">
 
         {/* ── En-tête ── */}
-        <div>
-          <h1
-            className="text-[22px]"
-            style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1, letterSpacing: "-0.4px" }}
-          >
-            Tâches
-          </h1>
-          <p className="text-[14px] mt-0.5" style={{ fontFamily: font.dm, color: colors.text2 }}>
-            {incompleteCount > 0
-              ? `${incompleteCount} tâche${incompleteCount > 1 ? "s" : ""} à faire`
-              : "Tout est à jour 🎉"}
-          </p>
-        </div>
+        <h1
+          className="text-[22px]"
+          style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1, letterSpacing: "-0.4px" }}
+        >
+          Tâches
+        </h1>
 
         {/* ── Capture rapide ── */}
         <CaptureBar onCapture={handleCapture} />
@@ -268,15 +260,26 @@ export default function TachesPage() {
                                 className="select-none"
                                 style={{ ...(prov.draggableProps.style as React.CSSProperties ?? {}), userSelect: "none" }}
                               >
-                                <TodoItemRow
-                                  item={item}
-                                  dragHandleProps={prov.dragHandleProps}
-                                  isDragging={snap.isDragging}
-                                  onToggleComplete={() => todos.toggleComplete(item.id)}
-                                  onToggleStar={() => todos.toggleStar(item.id)}
-                                  onTap={() => setSelectedItem(item)}
-                                  onRename={(title) => todos.updateItem(item.id, { title })}
-                                />
+                                <SwipeableRow
+                                  onLeftAction={() => setSchedulingItem(item)}
+                                  leftAction={<CalendarActionIcon />}
+                                  leftActionColor={colors.primary}
+                                  onRightAction={() => todos.deleteItem(item.id)}
+                                  rightAction={<TrashActionIcon />}
+                                  rightActionColor={colors.danger}
+                                  contentBg={snap.isDragging ? colors.primaryLight : colors.surface}
+                                  disabled={snap.isDragging}
+                                >
+                                  <TodoItemRow
+                                    item={item}
+                                    dragHandleProps={prov.dragHandleProps}
+                                    isDragging={snap.isDragging}
+                                    onToggleComplete={() => todos.toggleComplete(item.id)}
+                                    onToggleStar={() => todos.toggleStar(item.id)}
+                                    onTap={() => setSelectedItem(item)}
+                                    onRename={(title) => todos.updateItem(item.id, { title })}
+                                  />
+                                </SwipeableRow>
                               </div>
                             )}
                           </Draggable>
@@ -295,20 +298,28 @@ export default function TachesPage() {
                         </div>
                       )}
 
-                      {/* ── Tâches terminées — poubelle rouge à gauche ── */}
+                      {/* ── Tâches terminées — poubelle rouge + swipe gauche ── */}
                       {listItems
                         .filter((i) => i.is_completed)
                         .map((item) => (
-                          <TodoItemRow
+                          <SwipeableRow
                             key={item.id}
-                            item={item}
-                            dragHandleProps={null}
-                            isDragging={false}
-                            onToggleComplete={() => todos.toggleComplete(item.id)}
-                            onToggleStar={() => todos.toggleStar(item.id)}
-                            onTap={() => setSelectedItem(item)}
-                            onDelete={() => todos.deleteItem(item.id)}
-                          />
+                            onRightAction={() => todos.deleteItem(item.id)}
+                            rightAction={<TrashActionIcon />}
+                            rightActionColor={colors.danger}
+                            contentBg={colors.surface}
+                          >
+                            <TodoItemRow
+                              item={item}
+                              dragHandleProps={null}
+                              isDragging={false}
+                              onToggleComplete={() => todos.toggleComplete(item.id)}
+                              onToggleStar={() => todos.toggleStar(item.id)}
+                              onTap={() => setSelectedItem(item)}
+                              onDelete={() => todos.deleteItem(item.id)}
+                              onRename={(title) => todos.updateItem(item.id, { title })}
+                            />
+                          </SwipeableRow>
                         ))
                       }
                     </div>
