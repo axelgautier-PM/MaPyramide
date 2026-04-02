@@ -37,15 +37,16 @@ export default function TachesListesPage() {
   }
 
   // ── Changer l'emoji ────────────────────────────────────────────────────────
-  async function handlePickEmoji(listId: string, emoji: string) {
+  async function handlePickEmoji(emoji: string) {
+    if (!emojiPickerFor) return;
     setEmojiPickerFor(null);
-    await todos.updateList(listId, { icon: emoji });
+    await todos.updateList(emojiPickerFor, { icon: emoji });
   }
 
   // ── Renommer ──────────────────────────────────────────────────────────────
   async function handleNameBlur(listId: string, value: string) {
     setEditingNameFor(null);
-    const trimmed = value.trim();
+    const trimmed  = value.trim();
     const original = todos.lists.find((l) => l.id === listId);
     if (trimmed && trimmed !== original?.name) {
       await todos.updateList(listId, { name: trimmed });
@@ -59,6 +60,8 @@ export default function TachesListesPage() {
     setNewListName("");
     setShowNewList(false);
   }
+
+  const activeListForPicker = todos.lists.find((l) => l.id === emojiPickerFor);
 
   return (
     <div className="flex flex-col gap-4 pb-6">
@@ -130,7 +133,7 @@ export default function TachesListesPage() {
                               {/* Drag handle */}
                               <div
                                 {...prov.dragHandleProps}
-                                className="shrink-0 w-5 flex items-center justify-center cursor-grab touch-none"
+                                className="shrink-0 w-5 flex items-center justify-center cursor-grab touch-none select-none"
                                 aria-label="Réordonner"
                               >
                                 <svg width="10" height="14" viewBox="0 0 10 14" fill="none">
@@ -143,45 +146,15 @@ export default function TachesListesPage() {
                                 </svg>
                               </div>
 
-                              {/* Bouton emoji */}
-                              <div className="relative">
-                                <button
-                                  onClick={() => setEmojiPickerFor(emojiPickerFor === list.id ? null : list.id)}
-                                  className="text-[22px] w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90"
-                                  style={{ background: emojiPickerFor === list.id ? colors.primaryLight : colors.bg }}
-                                  aria-label="Changer l'émoji"
-                                >
-                                  {list.icon}
-                                </button>
-
-                                {/* Picker émoji */}
-                                {emojiPickerFor === list.id && (
-                                  <>
-                                    <div className="fixed inset-0 z-10" onClick={() => setEmojiPickerFor(null)} />
-                                    <div
-                                      className="absolute left-0 top-full mt-2 rounded-2xl p-2.5 z-20 grid gap-1"
-                                      style={{
-                                        background:          colors.surface,
-                                        border:              `1.5px solid ${colors.border}`,
-                                        boxShadow:           "0 8px 24px rgba(0,0,0,0.12)",
-                                        gridTemplateColumns: "repeat(6, 1fr)",
-                                        width:               222,
-                                      }}
-                                    >
-                                      {COMMON_EMOJIS.map((emoji) => (
-                                        <button
-                                          key={emoji}
-                                          onClick={() => handlePickEmoji(list.id, emoji)}
-                                          className="w-9 h-9 rounded-xl flex items-center justify-center text-[18px] transition-all active:scale-90"
-                                          style={{ background: list.icon === emoji ? colors.primaryLight : "transparent" }}
-                                        >
-                                          {emoji}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </>
-                                )}
-                              </div>
+                              {/* Bouton emoji — ouvre le picker en bottom sheet */}
+                              <button
+                                onClick={() => setEmojiPickerFor(emojiPickerFor === list.id ? null : list.id)}
+                                className="shrink-0 text-[22px] w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90"
+                                style={{ background: emojiPickerFor === list.id ? colors.primaryLight : colors.bg }}
+                                aria-label="Changer l'émoji"
+                              >
+                                {list.icon}
+                              </button>
 
                               {/* Nom (éditable au tap) */}
                               {editingNameFor === list.id ? (
@@ -290,6 +263,59 @@ export default function TachesListesPage() {
           </svg>
           Nouvelle liste
         </button>
+      )}
+
+      {/* ── Picker émoji — bottom sheet fixe, hors du DOM de la liste ── */}
+      {emojiPickerFor && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40"
+            style={{ background: "rgba(0,0,0,0.3)" }}
+            onClick={() => setEmojiPickerFor(null)}
+          />
+          {/* Sheet */}
+          <div
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl"
+            style={{
+              background:    colors.surface,
+              paddingBottom: "max(28px, env(safe-area-inset-bottom))",
+              boxShadow:     "0 -8px 32px rgba(0,0,0,0.12)",
+            }}
+          >
+            {/* Poignée */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-10 h-1 rounded-full" style={{ background: colors.border }} />
+            </div>
+
+            <div className="px-4 pb-2 flex items-center justify-between">
+              <p className="text-[14px]" style={{ fontFamily: font.dm, fontWeight: 600, color: colors.text1 }}>
+                Émoji de la liste
+              </p>
+              {activeListForPicker && (
+                <span className="text-[13px]" style={{ fontFamily: font.dm, color: colors.text2 }}>
+                  {activeListForPicker.icon} {activeListForPicker.name}
+                </span>
+              )}
+            </div>
+
+            <div className="px-4 pb-4 grid gap-2" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
+              {COMMON_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handlePickEmoji(emoji)}
+                  className="h-12 rounded-xl flex items-center justify-center text-[24px] transition-all active:scale-90"
+                  style={{
+                    background: activeListForPicker?.icon === emoji ? colors.primaryLight : colors.bg,
+                    border:     activeListForPicker?.icon === emoji ? `1.5px solid ${colors.primary}` : "none",
+                  }}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

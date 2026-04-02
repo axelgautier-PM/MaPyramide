@@ -1,70 +1,38 @@
 "use client";
 
-import type { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import { colors, font } from "@/lib/tokens";
 import type { TodoItem } from "@/types/todo";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface TodoItemRowProps {
-  item:            TodoItem;
-  dragHandleProps: DraggableProvidedDragHandleProps | null | undefined;
-  isDragging:      boolean;
+  item:             TodoItem;
+  isDragging:       boolean;
   onToggleComplete: () => void;
   onToggleStar:     () => void;
   onTap:            () => void;   // ouvre le détail
-  onDelete?:        () => void;   // supprime la tâche (affiché si complétée)
 }
 
 // ─── Composant ────────────────────────────────────────────────────────────────
 export function TodoItemRow({
   item,
-  dragHandleProps,
   isDragging,
   onToggleComplete,
   onToggleStar,
   onTap,
-  onDelete,
 }: TodoItemRowProps) {
   return (
     <div
-      className="flex items-center gap-2 px-3 py-3 rounded-xl transition-all"
+      className="flex items-center gap-2 px-3 py-3 rounded-xl transition-all select-none"
       style={{
         background: isDragging ? colors.primaryLight : "transparent",
         boxShadow:  isDragging ? `0 4px 16px ${colors.primary}25` : "none",
         opacity:    item.is_completed ? 0.55 : 1,
+        userSelect: "none",
       }}
     >
-      {/* ── Handle drag ou bouton supprimer ── */}
-      {item.is_completed && onDelete ? (
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="shrink-0 flex items-center justify-center w-5 h-5 transition-all active:scale-90"
-          aria-label="Supprimer la tâche"
-        >
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <path d="M2 2l9 9M11 2l-9 9" stroke={colors.danger} strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </button>
-      ) : (
-        <div
-          {...dragHandleProps}
-          className="shrink-0 flex items-center justify-center w-5 cursor-grab active:cursor-grabbing touch-none"
-          aria-label="Déplacer"
-        >
-          <svg width="10" height="14" viewBox="0 0 10 14" fill="none">
-            <circle cx="3" cy="3"  r="1.2" fill={colors.text3} />
-            <circle cx="7" cy="3"  r="1.2" fill={colors.text3} />
-            <circle cx="3" cy="7"  r="1.2" fill={colors.text3} />
-            <circle cx="7" cy="7"  r="1.2" fill={colors.text3} />
-            <circle cx="3" cy="11" r="1.2" fill={colors.text3} />
-            <circle cx="7" cy="11" r="1.2" fill={colors.text3} />
-          </svg>
-        </div>
-      )}
-
       {/* ── Checkbox ── */}
       <button
-        onClick={onToggleComplete}
+        onClick={(e) => { e.stopPropagation(); onToggleComplete(); }}
         className="shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all active:scale-90"
         style={{
           borderColor: item.is_completed ? colors.success : colors.border2,
@@ -81,16 +49,16 @@ export function TodoItemRow({
 
       {/* ── Titre + badges ── */}
       <button
-        onClick={onTap}
+        onClick={(e) => { e.stopPropagation(); onTap(); }}
         className="flex-1 flex flex-col items-start gap-0.5 min-w-0 text-left"
       >
         <span
           className="text-[14px] leading-snug truncate w-full"
           style={{
-            fontFamily:      font.dm,
-            fontWeight:      item.is_starred ? 600 : 400,
-            color:           item.is_completed ? colors.text3 : colors.text1,
-            textDecoration:  item.is_completed ? "line-through" : "none",
+            fontFamily:     font.dm,
+            fontWeight:     item.is_starred ? 600 : 400,
+            color:          item.is_completed ? colors.text3 : colors.text1,
+            textDecoration: item.is_completed ? "line-through" : "none",
           }}
         >
           {item.title}
@@ -120,7 +88,7 @@ export function TodoItemRow({
 
       {/* ── Étoile ── */}
       <button
-        onClick={onToggleStar}
+        onClick={(e) => { e.stopPropagation(); onToggleStar(); }}
         className="shrink-0 w-7 h-7 flex items-center justify-center transition-all active:scale-90"
         aria-label={item.is_starred ? "Retirer des priorités" : "Marquer prioritaire"}
       >

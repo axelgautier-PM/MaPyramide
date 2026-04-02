@@ -4,6 +4,14 @@ import { useState } from "react";
 import { colors, font } from "@/lib/tokens";
 import type { TodoItem } from "@/types/todo";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface TodoList {
+  id:    string;
+  name:  string;
+  icon:  string;
+  color: string;
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface TaskDetailSheetProps {
   item:               TodoItem;
@@ -14,6 +22,10 @@ interface TaskDetailSheetProps {
   onToggleComplete:   () => void;
   /** Demande à la page parente d'ouvrir AddEventSheet pour cette tâche */
   onScheduleRequest:  () => void;
+  /** Listes disponibles pour le déplacement */
+  lists?:             TodoList[];
+  /** Appelé quand l'utilisateur déplace la tâche vers une autre liste */
+  onMoveToList?:      (listId: string) => void;
 }
 
 // ─── Composant ────────────────────────────────────────────────────────────────
@@ -25,6 +37,8 @@ export function TaskDetailSheet({
   onToggleStar,
   onToggleComplete,
   onScheduleRequest,
+  lists,
+  onMoveToList,
 }: TaskDetailSheetProps) {
   const [title,       setTitle]       = useState(item.title);
   const [description, setDescription] = useState(item.description ?? "");
@@ -39,6 +53,10 @@ export function TaskDetailSheet({
     if (Object.keys(patch).length > 0) onUpdate(patch);
     onClose();
   }
+
+  // Autres listes (pas la liste courante)
+  const otherLists = lists?.filter((l) => l.id !== item.list_id) ?? [];
+  const currentList = lists?.find((l) => l.id === item.list_id);
 
   return (
     <>
@@ -114,13 +132,62 @@ export function TaskDetailSheet({
             onChange={(e) => setTitle(e.target.value)}
             className="text-[20px] w-full bg-transparent outline-none"
             style={{
-              fontFamily:      font.dm,
-              fontWeight:      700,
-              color:           colors.text1,
-              letterSpacing:   "-0.3px",
-              textDecoration:  item.is_completed ? "line-through" : "none",
+              fontFamily:     font.dm,
+              fontWeight:     700,
+              color:          colors.text1,
+              letterSpacing:  "-0.3px",
+              textDecoration: item.is_completed ? "line-through" : "none",
             }}
           />
+
+          {/* ── Déplacer vers ── */}
+          {lists && lists.length > 1 && (
+            <div>
+              <p className="text-[11px] uppercase tracking-widest mb-2" style={{ fontFamily: font.dm, color: colors.text3, fontWeight: 600 }}>
+                Liste
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {/* Liste courante */}
+                {currentList && (
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px]"
+                    style={{
+                      background: currentList.color,
+                      color:      "#fff",
+                      fontFamily: font.dm,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <span>{currentList.icon}</span>
+                    <span>{currentList.name}</span>
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="ml-0.5">
+                      <path d="M1.5 5l3 3 4-6" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                )}
+                {/* Autres listes */}
+                {otherLists.map((list) => (
+                  <button
+                    key={list.id}
+                    onClick={() => {
+                      onMoveToList?.(list.id);
+                      onClose();
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] transition-all active:scale-95"
+                    style={{
+                      background: colors.bg,
+                      border:     `1.5px solid ${colors.border}`,
+                      color:      colors.text2,
+                      fontFamily: font.dm,
+                    }}
+                  >
+                    <span>{list.icon}</span>
+                    <span>{list.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ── Description ── */}
           <div>
@@ -134,11 +201,11 @@ export function TaskDetailSheet({
               rows={4}
               className="w-full rounded-xl px-3 py-2.5 text-[14px] outline-none resize-none"
               style={{
-                fontFamily:  font.dm,
-                color:       colors.text1,
-                background:  colors.bg,
-                border:      `1.5px solid ${colors.border}`,
-                lineHeight:  1.6,
+                fontFamily: font.dm,
+                color:      colors.text1,
+                background: colors.bg,
+                border:     `1.5px solid ${colors.border}`,
+                lineHeight: 1.6,
               }}
             />
           </div>

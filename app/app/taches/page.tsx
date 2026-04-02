@@ -264,29 +264,37 @@ export default function TachesPage() {
                         .filter((i) => !i.is_completed)
                         .map((item, index) => (
                           <Draggable key={item.id} draggableId={item.id} index={index}>
-                            {(prov, snap) => (
-                              <div ref={prov.innerRef} {...prov.draggableProps}>
-                                <SwipeableRow
-                                  onLeftAction={() => setSchedulingItem(item)}
-                                  leftAction={<CalendarActionIcon />}
-                                  leftActionColor={colors.primary}
-                                  onRightAction={() => todos.deleteItem(item.id)}
-                                  rightAction={<TrashActionIcon />}
-                                  rightActionColor={colors.danger}
-                                  contentBg={snap.isDragging ? colors.primaryLight : colors.surface}
-                                  disabled={snap.isDragging}
+                            {(prov, snap) => {
+                              const { style: dragStyle, ...restDraggableProps } = prov.draggableProps;
+                              return (
+                                <div
+                                  ref={prov.innerRef}
+                                  {...restDraggableProps}
+                                  {...prov.dragHandleProps}
+                                  className="select-none"
+                                  style={{ ...(dragStyle as React.CSSProperties ?? {}), userSelect: "none" }}
                                 >
-                                  <TodoItemRow
-                                    item={item}
-                                    dragHandleProps={prov.dragHandleProps}
-                                    isDragging={snap.isDragging}
-                                    onToggleComplete={() => todos.toggleComplete(item.id)}
-                                    onToggleStar={() => todos.toggleStar(item.id)}
-                                    onTap={() => setSelectedItem(item)}
-                                  />
-                                </SwipeableRow>
-                              </div>
-                            )}
+                                  <SwipeableRow
+                                    onLeftAction={() => setSchedulingItem(item)}
+                                    leftAction={<CalendarActionIcon />}
+                                    leftActionColor={colors.primary}
+                                    onRightAction={() => todos.deleteItem(item.id)}
+                                    rightAction={<TrashActionIcon />}
+                                    rightActionColor={colors.danger}
+                                    contentBg={snap.isDragging ? colors.primaryLight : colors.surface}
+                                    disabled={snap.isDragging}
+                                  >
+                                    <TodoItemRow
+                                      item={item}
+                                      isDragging={snap.isDragging}
+                                      onToggleComplete={() => todos.toggleComplete(item.id)}
+                                      onToggleStar={() => todos.toggleStar(item.id)}
+                                      onTap={() => setSelectedItem(item)}
+                                    />
+                                  </SwipeableRow>
+                                </div>
+                              );
+                            }}
                           </Draggable>
                         ))
                       }
@@ -304,27 +312,28 @@ export default function TachesPage() {
                       )}
 
                       {/* ── Tâches terminées (swipe gauche = supprimer) ── */}
-                      {listItems
-                        .filter((i) => i.is_completed)
-                        .map((item) => (
-                          <SwipeableRow
-                            key={item.id}
-                            onRightAction={() => todos.deleteItem(item.id)}
-                            rightAction={<TrashActionIcon />}
-                            rightActionColor={colors.danger}
-                            contentBg={colors.surface}
-                          >
-                            <TodoItemRow
-                              item={item}
-                              dragHandleProps={null}
-                              isDragging={false}
-                              onToggleComplete={() => todos.toggleComplete(item.id)}
-                              onToggleStar={() => todos.toggleStar(item.id)}
-                              onTap={() => setSelectedItem(item)}
-                            />
-                          </SwipeableRow>
-                        ))
-                      }
+                      <div className="select-none" style={{ userSelect: "none" }}>
+                        {listItems
+                          .filter((i) => i.is_completed)
+                          .map((item) => (
+                            <SwipeableRow
+                              key={item.id}
+                              onRightAction={() => todos.deleteItem(item.id)}
+                              rightAction={<TrashActionIcon />}
+                              rightActionColor={colors.danger}
+                              contentBg={colors.surface}
+                            >
+                              <TodoItemRow
+                                item={item}
+                                isDragging={false}
+                                onToggleComplete={() => todos.toggleComplete(item.id)}
+                                onToggleStar={() => todos.toggleStar(item.id)}
+                                onTap={() => setSelectedItem(item)}
+                              />
+                            </SwipeableRow>
+                          ))
+                        }
+                      </div>
                     </div>
                   )}
                 </Droppable>
@@ -340,6 +349,8 @@ export default function TachesPage() {
       {selectedItem && (
         <TaskDetailSheet
           item={selectedItem}
+          lists={todos.lists}
+          onMoveToList={(listId) => todos.moveItemToList(selectedItem.id, listId)}
           onClose={() => setSelectedItem(null)}
           onUpdate={(patch) => todos.updateItem(selectedItem.id, patch)}
           onDelete={() => { todos.deleteItem(selectedItem.id); setSelectedItem(null); }}

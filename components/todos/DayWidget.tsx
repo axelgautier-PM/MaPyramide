@@ -66,7 +66,6 @@ export function DayWidget({ starredItems, onToggleComplete, onToggleStar, onTap 
               <TodoItemRow
                 key={item.id}
                 item={item}
-                dragHandleProps={null}
                 isDragging={false}
                 onToggleComplete={() => onToggleComplete(item.id)}
                 onToggleStar={() => onToggleStar(item.id)}
@@ -85,7 +84,6 @@ export function DayWidget({ starredItems, onToggleComplete, onToggleStar, onTap 
                 <TodoItemRow
                   key={item.id}
                   item={item}
-                  dragHandleProps={null}
                   isDragging={false}
                   onToggleComplete={() => onToggleComplete(item.id)}
                   onToggleStar={() => onToggleStar(item.id)}
