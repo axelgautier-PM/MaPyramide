@@ -33,7 +33,7 @@ interface CaptureBarProps {
 }
 
 // ─── Composant ────────────────────────────────────────────────────────────────
-export function CaptureBar({ onCapture, placeholder = "Capture rapide…" }: CaptureBarProps) {
+export function CaptureBar({ onCapture, placeholder = "Ajouter une tâche" }: CaptureBarProps) {
   const [text,      setText]      = useState("");
   const [listening, setListening] = useState(false);
   const [canAudio,  setCanAudio]  = useState(false);
@@ -104,13 +104,13 @@ export function CaptureBar({ onCapture, placeholder = "Capture rapide…" }: Cap
       className="flex items-center gap-2 px-3 py-2.5 rounded-2xl"
       style={{
         background: colors.surface,
-        border:     `1.5px solid ${listening ? colors.primary : colors.border}`,
-        boxShadow:  listening ? `0 0 0 3px ${colors.primary}20` : "none",
+        border:     `1.5px solid ${colors.primary}`,
+        boxShadow:  `0 0 0 3px ${colors.primary}18`,
         transition: "border-color 0.2s, box-shadow 0.2s",
       }}
     >
       {/* Icône crayon — signale clairement un champ de saisie */}
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0" style={{ color: colors.text3 }}>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0" style={{ color: colors.primary }}>
         <path d="M11 2l3 3-8 8H3v-3l8-8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
         <path d="M9 4l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>

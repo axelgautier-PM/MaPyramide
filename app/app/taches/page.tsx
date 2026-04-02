@@ -129,10 +129,7 @@ export default function TachesPage() {
         </div>
 
         {/* ── Capture rapide ── */}
-        <CaptureBar
-          onCapture={handleCapture}
-          placeholder={selectedList ? `Ajouter dans ${selectedList.icon} ${selectedList.name}…` : "Capture rapide…"}
-        />
+        <CaptureBar onCapture={handleCapture} />
 
         {/* ── Widget Ma journée ── */}
         <DayWidget
@@ -278,6 +275,7 @@ export default function TachesPage() {
                                   onToggleComplete={() => todos.toggleComplete(item.id)}
                                   onToggleStar={() => todos.toggleStar(item.id)}
                                   onTap={() => setSelectedItem(item)}
+                                  onRename={(title) => todos.updateItem(item.id, { title })}
                                 />
                               </div>
                             )}

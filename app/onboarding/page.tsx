@@ -113,7 +113,7 @@ export default function OnboardingPage() {
   function finish() {
     if (typeof window !== "undefined") {
       localStorage.setItem("mp_onboarding_done", "true");
-      // Marque la redirection vers /app/defis après connexion
+      // Marque la redirection vers /app/taches après connexion
       localStorage.setItem("mp_redirect_defis", "true");
     }
     router.push("/auth");

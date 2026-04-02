@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef } from "react";
 import type { DraggableProvidedDragHandleProps } from "@hello-pangea/dnd";
 import { colors, font } from "@/lib/tokens";
 import type { TodoItem } from "@/types/todo";
@@ -11,9 +12,12 @@ interface TodoItemRowProps {
   isDragging:       boolean;
   onToggleComplete: () => void;
   onToggleStar:     () => void;
-  onTap:            () => void;   // ouvre le détail
-  onDelete?:        () => void;   // bouton rouge poubelle sur les tâches terminées
+  onTap:            () => void;
+  onDelete?:        () => void;   // bouton poubelle pour les tâches terminées
+  onRename?:        (newTitle: string) => void; // renommage appui long
 }
+
+const LONG_PRESS_MS = 550; // durée appui long avant renommage
 
 // ─── Composant ────────────────────────────────────────────────────────────────
 export function TodoItemRow({
@@ -24,7 +28,49 @@ export function TodoItemRow({
   onToggleStar,
   onTap,
   onDelete,
+  onRename,
 }: TodoItemRowProps) {
+  const [renaming,    setRenaming]    = useState(false);
+  const [renameText,  setRenameText]  = useState("");
+  const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const movedRef    = useRef(false);
+  const renameInput = useRef<HTMLInputElement>(null);
+
+  // ── Appui long → mode renommage ───────────────────────────────────────────
+  function onTitleTouchStart() {
+    if (!onRename) return;
+    movedRef.current = false;
+    timerRef.current = setTimeout(() => {
+      if (movedRef.current) return;
+      setRenameText(item.title);
+      setRenaming(true);
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
+      // Focus différé pour laisser le DOM se mettre à jour
+      requestAnimationFrame(() => renameInput.current?.select());
+    }, LONG_PRESS_MS);
+  }
+
+  function onTitleTouchMove() {
+    movedRef.current = true;
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }
+
+  function onTitleTouchEnd() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }
+
+  // ── Valider le renommage ──────────────────────────────────────────────────
+  function commitRename() {
+    setRenaming(false);
+    const trimmed = renameText.trim();
+    if (trimmed && trimmed !== item.title) onRename?.(trimmed);
+  }
+
+  function onRenameKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") commitRename();
+    if (e.key === "Escape") setRenaming(false);
+  }
+
   return (
     <div
       className="flex items-center gap-2 px-3 py-3 rounded-xl transition-all select-none"
@@ -35,19 +81,21 @@ export function TodoItemRow({
         userSelect: "none",
       }}
     >
-      {/* ── Handle drag (tâches actives) ou bouton poubelle (tâches terminées) ── */}
+      {/* ── Colonne gauche : handle drag / poubelle / vide ── */}
       {item.is_completed && onDelete ? (
+        /* Bouton poubelle rouge plein pour les tâches terminées */
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all active:scale-90"
-          style={{ background: colors.dangerLight }}
+          style={{ background: colors.danger }}
           aria-label="Supprimer la tâche"
         >
-          <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
-            <path d="M1 3h9M4 3V2h3v1M2 3l.8 9h5.4L9 3" stroke={colors.danger} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="11" height="12" viewBox="0 0 11 13" fill="none">
+            <path d="M1 3h9M4 3V2h3v1M2 3l.8 9h5.4L9 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-      ) : (
+      ) : dragHandleProps !== null && dragHandleProps !== undefined ? (
+        /* Handle drag — visible uniquement si dragHandleProps fourni */
         <div
           {...dragHandleProps}
           className="shrink-0 flex items-center justify-center w-5 cursor-grab active:cursor-grabbing touch-none"
@@ -62,7 +110,7 @@ export function TodoItemRow({
             <circle cx="7" cy="11" r="1.2" fill={colors.text3} />
           </svg>
         </div>
-      )}
+      ) : null /* DayWidget : pas de handle, pas de poubelle → rien */}
 
       {/* ── Checkbox ── */}
       <button
@@ -81,44 +129,68 @@ export function TodoItemRow({
         )}
       </button>
 
-      {/* ── Titre + badges ── */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onTap(); }}
-        className="flex-1 flex flex-col items-start gap-0.5 min-w-0 text-left"
-      >
-        <span
-          className="text-[14px] leading-snug truncate w-full"
+      {/* ── Titre : tap = détail, appui long = renommage ── */}
+      {renaming ? (
+        <input
+          ref={renameInput}
+          autoFocus
+          type="text"
+          value={renameText}
+          onChange={(e) => setRenameText(e.target.value)}
+          onBlur={commitRename}
+          onKeyDown={onRenameKey}
+          className="flex-1 bg-transparent outline-none text-[14px]"
           style={{
-            fontFamily:     font.dm,
-            fontWeight:     item.is_starred ? 600 : 400,
-            color:          item.is_completed ? colors.text3 : colors.text1,
-            textDecoration: item.is_completed ? "line-through" : "none",
+            fontFamily:    font.dm,
+            fontWeight:    item.is_starred ? 600 : 400,
+            color:         colors.text1,
+            borderBottom:  `1.5px solid ${colors.primary}`,
+            paddingBottom: 1,
+            minWidth:      0,
           }}
+        />
+      ) : (
+        <button
+          onClick={(e) => { e.stopPropagation(); onTap(); }}
+          onTouchStart={onTitleTouchStart}
+          onTouchMove={onTitleTouchMove}
+          onTouchEnd={onTitleTouchEnd}
+          className="flex-1 flex flex-col items-start gap-0.5 min-w-0 text-left"
         >
-          {item.title}
-        </span>
+          <span
+            className="text-[14px] leading-snug truncate w-full"
+            style={{
+              fontFamily:     font.dm,
+              fontWeight:     item.is_starred ? 600 : 400,
+              color:          item.is_completed ? colors.text3 : colors.text1,
+              textDecoration: item.is_completed ? "line-through" : "none",
+            }}
+          >
+            {item.title}
+          </span>
 
-        {/* Badges sous-titre */}
-        {(item.description || item.calendar_event_id || item.due_date) && (
-          <div className="flex items-center gap-1.5">
-            {item.due_date && (
-              <span className="text-[11px]" style={{ color: colors.warning, fontFamily: font.dm }}>
-                📅 {new Date(item.due_date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-              </span>
-            )}
-            {item.calendar_event_id && (
-              <span className="text-[11px]" style={{ color: colors.primary, fontFamily: font.dm }}>
-                📆 Planifié
-              </span>
-            )}
-            {item.description && (
-              <span className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>
-                📝
-              </span>
-            )}
-          </div>
-        )}
-      </button>
+          {/* Badges sous-titre */}
+          {(item.description || item.calendar_event_id || item.due_date) && (
+            <div className="flex items-center gap-1.5">
+              {item.due_date && (
+                <span className="text-[11px]" style={{ color: colors.warning, fontFamily: font.dm }}>
+                  📅 {new Date(item.due_date + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                </span>
+              )}
+              {item.calendar_event_id && (
+                <span className="text-[11px]" style={{ color: colors.primary, fontFamily: font.dm }}>
+                  📆 Planifié
+                </span>
+              )}
+              {item.description && (
+                <span className="text-[11px]" style={{ color: colors.text3, fontFamily: font.dm }}>
+                  📝
+                </span>
+              )}
+            </div>
+          )}
+        </button>
+      )}
 
       {/* ── Étoile ── */}
       <button

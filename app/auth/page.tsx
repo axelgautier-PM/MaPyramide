@@ -76,9 +76,9 @@ export default function AuthPage() {
         localStorage.getItem("mp_redirect_defis") === "true";
       if (redirectDefis) {
         localStorage.removeItem("mp_redirect_defis");
-        window.location.href = "/app/defis";
+        window.location.href = "/app/taches";
       } else {
-        window.location.href = "/app";
+        window.location.href = "/app/taches";
       }
     }
   }
@@ -111,9 +111,9 @@ export default function AuthPage() {
         localStorage.getItem("mp_redirect_defis") === "true";
       if (redirectDefis) {
         localStorage.removeItem("mp_redirect_defis");
-        window.location.href = "/app/defis";
+        window.location.href = "/app/taches";
       } else {
-        window.location.href = "/app";
+        window.location.href = "/app/taches";
       }
     } else {
       // Email de confirmation envoyé

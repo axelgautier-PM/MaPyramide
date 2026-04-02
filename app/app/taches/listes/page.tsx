@@ -19,10 +19,46 @@ export default function TachesListesPage() {
   const router = useRouter();
   const todos  = useTodos();
 
-  const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
-  const [editingNameFor, setEditingNameFor] = useState<string | null>(null);
-  const [showNewList,    setShowNewList]    = useState(false);
-  const [newListName,    setNewListName]    = useState("");
+  const [emojiPickerFor,  setEmojiPickerFor]  = useState<string | null>(null);
+  const [editingNameFor,  setEditingNameFor]  = useState<string | null>(null);
+  const [showNewList,     setShowNewList]     = useState(false);
+  const [newListName,     setNewListName]     = useState("");
+  // Confirmation suppression d'une liste avec tâches
+  const [deleteConfirm,   setDeleteConfirm]   = useState<{ listId: string; listName: string; taskCount: number } | null>(null);
+  const [moveTargetId,    setMoveTargetId]    = useState<string>("");
+
+  // ── Supprimer une liste (avec confirmation si elle contient des tâches) ──
+  function handleDeleteList(listId: string) {
+    const list      = todos.lists.find((l) => l.id === listId);
+    if (!list) return;
+    const taskCount = todos.items.filter((i) => i.list_id === listId).length;
+    if (taskCount > 0) {
+      const others = todos.lists.filter((l) => l.id !== listId);
+      setMoveTargetId(others[0]?.id ?? "");
+      setDeleteConfirm({ listId, listName: list.name, taskCount });
+    } else {
+      void todos.deleteList(listId);
+    }
+  }
+
+  async function confirmDeleteAndMove() {
+    if (!deleteConfirm) return;
+    if (moveTargetId) {
+      // Déplacer toutes les tâches vers la liste cible
+      const tasks = todos.items.filter((i) => i.list_id === deleteConfirm.listId);
+      await Promise.all(tasks.map((t) => todos.moveItemToList(t.id, moveTargetId)));
+    }
+    await todos.deleteList(deleteConfirm.listId);
+    setDeleteConfirm(null);
+  }
+
+  async function confirmDeleteAndPurge() {
+    if (!deleteConfirm) return;
+    const tasks = todos.items.filter((i) => i.list_id === deleteConfirm.listId);
+    await Promise.all(tasks.map((t) => todos.deleteItem(t.id)));
+    await todos.deleteList(deleteConfirm.listId);
+    setDeleteConfirm(null);
+  }
 
   // ── Réordonner les listes ─────────────────────────────────────────────────
   async function handleDragEnd(result: DropResult) {
@@ -113,7 +149,7 @@ export default function TachesListesPage() {
                       {(prov, snap) => (
                         <div ref={prov.innerRef} {...prov.draggableProps}>
                           <SwipeableRow
-                            onRightAction={todos.lists.length > 1 ? () => void todos.deleteList(list.id) : undefined}
+                            onRightAction={todos.lists.length > 1 ? () => handleDeleteList(list.id) : undefined}
                             rightAction={
                               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                                 <path d="M2 5h14M6 5V3h6v2M7 8v7M11 8v7M4 5l1 10h8l1-10" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -263,6 +299,89 @@ export default function TachesListesPage() {
           </svg>
           Nouvelle liste
         </button>
+      )}
+
+      {/* ── Confirmation suppression liste avec tâches ── */}
+      {deleteConfirm && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            style={{ background: "rgba(0,0,0,0.4)" }}
+            onClick={() => setDeleteConfirm(null)}
+          />
+          <div
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl px-5 pt-5"
+            style={{
+              background:    colors.surface,
+              paddingBottom: "max(28px, env(safe-area-inset-bottom))",
+              boxShadow:     "0 -8px 32px rgba(0,0,0,0.15)",
+            }}
+          >
+            <div className="flex justify-center pb-3">
+              <div className="w-10 h-1 rounded-full" style={{ background: colors.border }} />
+            </div>
+            <p className="text-[17px] mb-1" style={{ fontFamily: font.dm, fontWeight: 700, color: colors.text1 }}>
+              Supprimer « {deleteConfirm.listName} » ?
+            </p>
+            <p className="text-[14px] mb-4" style={{ fontFamily: font.dm, color: colors.text2 }}>
+              Cette liste contient {deleteConfirm.taskCount} tâche{deleteConfirm.taskCount > 1 ? "s" : ""}. Que faire avec elles ?
+            </p>
+
+            {/* Sélecteur de liste cible */}
+            {todos.lists.filter((l) => l.id !== deleteConfirm.listId).length > 0 && (
+              <div className="mb-4">
+                <p className="text-[12px] uppercase tracking-widest mb-2" style={{ fontFamily: font.dm, color: colors.text3, fontWeight: 600 }}>
+                  Déplacer vers
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {todos.lists
+                    .filter((l) => l.id !== deleteConfirm.listId)
+                    .map((l) => (
+                      <button
+                        key={l.id}
+                        onClick={() => setMoveTargetId(l.id)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] transition-all active:scale-95"
+                        style={{
+                          background: moveTargetId === l.id ? l.color : colors.surface,
+                          border:     `1.5px solid ${moveTargetId === l.id ? l.color : colors.border}`,
+                          color:      moveTargetId === l.id ? "#fff" : colors.text2,
+                          fontFamily: font.dm,
+                          fontWeight: moveTargetId === l.id ? 600 : 400,
+                        }}
+                      >
+                        <span>{l.icon}</span><span>{l.name}</span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={confirmDeleteAndMove}
+                disabled={!moveTargetId}
+                className="w-full py-3.5 rounded-2xl text-[15px] transition-all active:scale-95 disabled:opacity-40"
+                style={{ background: colors.primary, color: "#fff", fontFamily: font.dm, fontWeight: 600 }}
+              >
+                Déplacer les tâches et supprimer
+              </button>
+              <button
+                onClick={confirmDeleteAndPurge}
+                className="w-full py-3.5 rounded-2xl text-[15px] transition-all active:scale-95"
+                style={{ background: colors.dangerLight, color: colors.danger, fontFamily: font.dm, fontWeight: 600 }}
+              >
+                Supprimer les tâches aussi
+              </button>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="w-full py-3 text-[14px]"
+                style={{ color: colors.text3, fontFamily: font.dm }}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ── Picker émoji — bottom sheet fixe, hors du DOM de la liste ── */}
