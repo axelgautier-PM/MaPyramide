@@ -14,12 +14,20 @@ const COMMON_EMOJIS = [
   "🔑","🎮","🐾","🌸","🍕","📱","💻","🏋️","🎓","🎁",
 ];
 
+// ─── Couleurs disponibles pour les listes ─────────────────────────────────────
+const PRESET_COLORS = [
+  "#6C63FF","#3EC98A","#FF6B6B","#FF8C42","#36A2EB",
+  "#FF6384","#4BC0C0","#9966FF","#F7C948","#2E86AB",
+  "#A5BE00","#E0523A","#16162A","#7B7B99","#B0B0C8",
+];
+
 // ─── Page administration des listes ──────────────────────────────────────────
 export default function TachesListesPage() {
   const router = useRouter();
   const todos  = useTodos();
 
-  const [emojiPickerFor,  setEmojiPickerFor]  = useState<string | null>(null);
+  const [emojiPickerFor,   setEmojiPickerFor]   = useState<string | null>(null);
+  const [colorPickerFor,   setColorPickerFor]   = useState<string | null>(null);
   const [editingNameFor,  setEditingNameFor]  = useState<string | null>(null);
   const [showNewList,     setShowNewList]     = useState(false);
   const [newListName,     setNewListName]     = useState("");
@@ -236,11 +244,56 @@ export default function TachesListesPage() {
                                 </button>
                               )}
 
-                              {/* Pastille couleur */}
-                              <div
-                                className="shrink-0 w-3 h-3 rounded-full"
-                                style={{ background: list.color }}
-                              />
+                              {/* Pastille couleur — cliquable pour ouvrir le picker */}
+                              <div className="relative shrink-0">
+                                <button
+                                  onClick={() => {
+                                    setEmojiPickerFor(null);
+                                    setColorPickerFor(colorPickerFor === list.id ? null : list.id);
+                                  }}
+                                  className="w-6 h-6 rounded-full transition-all active:scale-90 ring-offset-1"
+                                  style={{
+                                    background:  list.color,
+                                    boxShadow:   colorPickerFor === list.id
+                                      ? `0 0 0 2px white, 0 0 0 4px ${list.color}`
+                                      : "none",
+                                  }}
+                                  aria-label="Changer la couleur"
+                                />
+                                {colorPickerFor === list.id && (
+                                  <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setColorPickerFor(null)} />
+                                    <div
+                                      className="absolute right-0 top-full mt-2 rounded-2xl p-2.5 z-20 grid gap-1.5"
+                                      style={{
+                                        background:          colors.surface,
+                                        border:              `1.5px solid ${colors.border}`,
+                                        boxShadow:           "0 8px 24px rgba(0,0,0,0.12)",
+                                        gridTemplateColumns: "repeat(5, 1fr)",
+                                        width:               184,
+                                      }}
+                                    >
+                                      {PRESET_COLORS.map((color) => (
+                                        <button
+                                          key={color}
+                                          onClick={() => {
+                                            setColorPickerFor(null);
+                                            void todos.updateList(list.id, { color });
+                                          }}
+                                          className="w-8 h-8 rounded-full transition-all active:scale-90"
+                                          style={{
+                                            background: color,
+                                            boxShadow:  list.color === color
+                                              ? `0 0 0 2px white, 0 0 0 4px ${color}`
+                                              : "none",
+                                          }}
+                                          aria-label={color}
+                                        />
+                                      ))}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </SwipeableRow>
                         </div>

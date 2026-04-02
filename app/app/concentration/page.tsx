@@ -169,10 +169,23 @@ export default function ConcentrationPage() {
     }
   }, [phase]);
 
-  // Force un recalcul immédiat au retour en premier plan
+  // Retour en premier plan : recalcul depuis l'horloge réelle + relance l'intervalle
+  // iOS suspend setInterval en arrière-plan — on reconstruit tout depuis deadlineRef
   useEffect(() => {
     function onVisible() {
-      if (document.visibilityState === "visible" && running && !chronoMode) {
+      if (document.visibilityState !== "visible" || !running || chronoMode || !deadlineRef.current) return;
+
+      const msLeft = deadlineRef.current - Date.now();
+      const sLeft  = Math.max(0, Math.ceil(msLeft / 1000));
+      setRemaining(sLeft);
+
+      // Relance l'intervalle (iOS peut l'avoir suspendu/tué en arrière-plan)
+      clearInterval(intervalRef.current!);
+      if (sLeft > 0) {
+        intervalRef.current = setInterval(tick, 1000);
+      } else {
+        // Timer expiré pendant le fond → déclenche la fin
+        intervalRef.current = null;
         tick();
       }
     }
@@ -306,6 +319,9 @@ export default function ConcentrationPage() {
                 boxShadow: `0 4px 16px ${colors.primary}40`,
               }}
             >
+              <svg width="12" height="14" viewBox="0 0 12 14" fill="none">
+                <path d="M1 1l10 6-10 6V1z" fill="white" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
+              </svg>
               Démarrer
             </button>
           </div>
